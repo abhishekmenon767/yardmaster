@@ -11,6 +11,7 @@
         "spatie/laravel-package-tools": "^1.16"
     },
     "require-dev": {
+        "aws/aws-sdk-php": "^3.300",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "orchestra/testbench": "^10.0|^11.0",

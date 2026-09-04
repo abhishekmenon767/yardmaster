@@ -6,8 +6,10 @@ Horizon is excellent and requires Redis. Pulse works everywhere and is read-only
 Yardmaster is aimed at the gap between them: record every job on every
 connection, and expose exactly the operations each driver can actually perform.
 
-> **Status: phase 1 of 6 — the telemetry spine.** Recording works end to end on
-> every driver. There is no dashboard yet; that is phase 3.
+> **Status: phase 2 of 6 — driver adapters and the capability gate.** Recording
+> works end to end on every driver, and live introspection and control work
+> through a capability-negotiated adapter per driver. There is no dashboard yet;
+> that is phase 3.
 
 ## What works today
 
@@ -24,6 +26,54 @@ connection, and expose exactly the operations each driver can actually perform.
 - **Redaction on by default**, and the serialized command is never stored.
 - **Retention** via `php artisan yard:trim`, with payloads dropped well before
   the rows that carry them.
+
+## The capability gate
+
+A dashboard action is never "delete this job". It is "ask the adapter whether
+deleting by id is possible on this connection, and render accordingly".
+
+```php
+use Iocod\Yardmaster\Drivers\AdapterManager;
+use Iocod\Yardmaster\Drivers\Capability;
+
+$adapter = app(AdapterManager::class)->for('sqs');
+
+$adapter->supports(Capability::PeekPayloads);   // false
+$adapter->depth('reports');                     // ~120 pending, marked approximate
+$adapter->peek('reports');                      // throws UnsupportedCapability
+```
+
+An unsupported operation refuses loudly and names itself rather than returning
+an empty result, because a control that quietly does nothing is how a dashboard
+convinces an operator that a backed-up queue is idle.
+
+| Capability | database | redis | sqs |
+| --- | :---: | :---: | :---: |
+| Count pending / delayed / reserved | exact | exact | approximate |
+| Oldest job age | yes | yes | — |
+| List queues | yes | yes | yes |
+| Peek payloads | yes | yes | — |
+| Delete one by id | yes | yes¹ | — |
+| Promote a delayed job | yes | yes | — |
+| Purge a whole queue | yes | yes | yes² |
+
+¹ Redis has no per-job handle, so a job is addressed by its payload uuid and
+located by a bounded scan (`yardmaster.drivers.redis.max_scan`).
+² Rate-limited by SQS to once per 60 seconds; `purgeCooldownRemaining()` reports
+the wait *before* the operator clicks.
+
+**Any other driver — including beanstalkd — resolves to the null adapter:** full
+recorded history from Plane A, every live control correctly disabled. That is
+the architecture degrading as designed rather than the dashboard refusing to
+load. A beanstalkd adapter will land once it can be tested against a real
+server; shipping one that has never run would be exactly the kind of unverified
+claim this package exists to avoid.
+
+Applications can register their own:
+
+```php
+app(AdapterManager::class)->extend('kafka', fn ($connection, $config) => new KafkaAdapter(...));
+```
 
 ## Install
 
@@ -94,16 +144,23 @@ composer lint      # pint
 composer analyse   # phpstan
 ```
 
-The Redis parity test skips automatically without a running server; CI provides
-one.
+Redis-backed tests skip automatically without a running server; CI provides one.
+No test ever reaches AWS — the SQS suite replaces the transport with a mock
+handler, so the real client, request construction and response parsing are all
+still exercised.
+
+The shared contract in `tests/Contracts/AdapterContract.php` is written once and
+run against every adapter. Adding a driver means adding a class and a capability
+map, then running that file against it. If that is ever not true, the
+abstraction has leaked.
 
 ## Roadmap
 
 | Phase | | Status |
 | --- | --- | --- |
 | 1 | Telemetry spine | **done** |
-| 2 | Driver adapters and the capability gate | next |
-| 3 | JSON API and dashboard | |
+| 2 | Driver adapters and the capability gate | **done** (database, redis, sqs) |
+| 3 | JSON API and dashboard | next |
 | 4 | Redis stream ingest, sampling, Octane, serverless | |
 | 5 | Failure clustering, alerting, worker fleet | |
 | 6 | Docs, CI matrix, PHPStan level 9, 1.0 | |

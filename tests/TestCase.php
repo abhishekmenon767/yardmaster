@@ -2,6 +2,7 @@
 
 namespace Iocod\Yardmaster\Tests;
 
+use Aws\MockHandler;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Iocod\Yardmaster\YardmasterServiceProvider;
@@ -9,6 +10,21 @@ use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    /**
+     * Stubbed SQS transport. Every test resolves the real SqsQueue and the real
+     * SqsClient — only the wire is replaced, so request construction and
+     * response parsing are genuinely exercised, and no test can reach AWS or
+     * stall on a network timeout.
+     */
+    public MockHandler $sqs;
+
+    /**
+     * Every key this suite writes carries this prefix, so cleanup can remove
+     * exactly what the suite created and nothing else. A test suite that
+     * flushes a developer's Redis is a test suite people stop running.
+     */
+    public const REDIS_PREFIX = 'yardmaster_test:';
+
     protected function getPackageProviders($app): array
     {
         return [YardmasterServiceProvider::class];
@@ -24,7 +40,32 @@ abstract class TestCase extends Orchestra
         ]);
 
         $app['config']->set('cache.default', 'array');
+
+        // predis, because phpredis is a compiled extension the suite cannot
+        // assume. A distinct prefix keeps the suite's keys separable from
+        // anything else living on the developer's Redis.
+        $app['config']->set('database.redis.client', 'predis');
+        $app['config']->set('database.redis.options.prefix', self::REDIS_PREFIX);
+        $app['config']->set('database.redis.default', [
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'port' => (int) env('REDIS_PORT', 6379),
+            'database' => 0,
+        ]);
         $app['config']->set('queue.default', 'sync');
+
+        $this->sqs = new MockHandler;
+
+        $app['config']->set('queue.connections.sqs', [
+            'driver' => 'sqs',
+            'key' => 'test-key',
+            'secret' => 'test-secret',
+            'prefix' => 'https://sqs.us-east-1.amazonaws.com/123456789012',
+            'queue' => 'default',
+            'suffix' => '',
+            'region' => 'us-east-1',
+            'version' => 'latest',
+            'handler' => $this->sqs,
+        ]);
 
         $app['config']->set('queue.connections.redis', [
             'driver' => 'redis',
@@ -114,6 +155,32 @@ abstract class TestCase extends Orchestra
         }
 
         return $available = $socket !== false;
+    }
+
+    /**
+     * Remove only the keys this suite created.
+     */
+    protected function flushRedis(): void
+    {
+        $connection = $this->app->make('redis')->connection('default');
+
+        $cursor = 0;
+
+        do {
+            $result = $connection->scan($cursor, ['match' => self::REDIS_PREFIX.'*', 'count' => 500]);
+
+            if (! is_array($result) || count($result) < 2) {
+                break;
+            }
+
+            [$cursor, $keys] = $result;
+
+            foreach ((array) $keys as $key) {
+                // SCAN returns fully prefixed keys while ordinary commands add
+                // the prefix themselves, so strip it before deleting.
+                $connection->del(substr((string) $key, strlen(self::REDIS_PREFIX)));
+            }
+        } while ((int) $cursor !== 0);
     }
 
     /**

@@ -7,6 +7,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\Queue;
 use Iocod\Yardmaster\Commands\TrimCommand;
 use Iocod\Yardmaster\Contracts\Ingest;
+use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Support\PayloadInjector;
 use Iocod\Yardmaster\Support\Redactor;
 use Laravel\Octane\Events\RequestReceived;
@@ -41,6 +42,11 @@ class YardmasterServiceProvider extends PackageServiceProvider
         $this->app->singleton(Yardmaster::class, fn ($app) => new Yardmaster(
             $app,
             $app->make(Buffer::class),
+        ));
+
+        $this->app->singleton(AdapterManager::class, fn ($app) => new AdapterManager(
+            $app,
+            $app->make(Repository::class),
         ));
 
         $this->app->singleton(Redactor::class, fn ($app) => new Redactor(

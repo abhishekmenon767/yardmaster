@@ -70,6 +70,28 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Drivers
+    |---------------------------------------------------------------------------
+    | Live introspection and control. Each driver adapter declares what it can
+    | honestly do; the dashboard renders against that declaration rather than
+    | assuming. A driver with no adapter falls back to a null adapter: full
+    | recorded history, every live control correctly disabled.
+    |
+    | A queue connection may also carry 'yardmaster_depth_cache' in config/queue.php
+    | to override how long a depth reading is reused for that connection.
+    */
+
+    'drivers' => [
+        'redis' => [
+            // Redis has no per-job handle, so deleting or promoting a job means
+            // scanning for it. This caps that scan rather than stalling the
+            // dashboard on a very large backlog.
+            'max_scan' => (int) env('YARDMASTER_REDIS_MAX_SCAN', 10000),
+        ],
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Redaction
     |---------------------------------------------------------------------------
     | A queue dashboard is an unadvertised store of personal data. Redaction is
