@@ -1,0 +1,16 @@
+providers:
+  - Iocod\Yardmaster\YardmasterServiceProvider
+
+env:
+  - APP_ENV=local
+  - APP_KEY=base64:0000000000000000000000000000000000000000000=
+  - DB_CONNECTION=sqlite
+  - DB_DATABASE=/Users/abhishekiocod/yardmaster/workbench/database/database.sqlite
+  - QUEUE_CONNECTION=database
+  - CACHE_STORE=file
+
+workbench:
+  start: '/yardmaster'
+  install: true
+  discovers:
+    config: true

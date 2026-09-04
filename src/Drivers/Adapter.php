@@ -4,7 +4,7 @@ namespace Iocod\Yardmaster\Drivers;
 
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
-use Iocod\Yardmaster\Events\QueueActionPerformed;
+use Iocod\Yardmaster\Events\ActionPerformed;
 use Iocod\Yardmaster\Exceptions\UnsupportedCapability;
 use Iocod\Yardmaster\Values\PendingJob;
 use Iocod\Yardmaster\Values\QueueDepth;
@@ -192,13 +192,14 @@ abstract class Adapter implements QueueDriverAdapter
         ?string $target,
         int|bool $result,
     ): void {
-        $this->events?->dispatch(new QueueActionPerformed(
-            capability: $capability,
+        $this->events?->dispatch(new ActionPerformed(
+            action: $capability->value,
             connectionName: $this->connection,
             driver: $this->driver(),
             queue: $queue,
             target: $target,
             result: $result,
+            capability: $capability,
             at: microtime(true),
         ));
     }

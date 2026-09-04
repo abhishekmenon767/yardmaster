@@ -2,12 +2,17 @@
 
 namespace Iocod\Yardmaster;
 
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\Queue;
+use Illuminate\Support\Facades\Route;
+use Iocod\Yardmaster\Actions\AuditLog;
 use Iocod\Yardmaster\Commands\TrimCommand;
 use Iocod\Yardmaster\Contracts\Ingest;
 use Iocod\Yardmaster\Drivers\AdapterManager;
+use Iocod\Yardmaster\Events\ActionPerformed;
+use Iocod\Yardmaster\Http\Middleware\Authorize;
 use Iocod\Yardmaster\Support\PayloadInjector;
 use Iocod\Yardmaster\Support\Redactor;
 use Laravel\Octane\Events\RequestReceived;
@@ -24,7 +29,9 @@ class YardmasterServiceProvider extends PackageServiceProvider
             ->hasMigrations([
                 'create_yard_runs_table',
                 'create_yard_buckets_table',
+                'create_yard_actions_table',
             ])
+            ->hasViews('yardmaster')
             ->hasCommand(TrimCommand::class);
     }
 
@@ -78,6 +85,59 @@ class YardmasterServiceProvider extends PackageServiceProvider
         $this->registerRecorders();
         $this->registerPayloadInjector();
         $this->registerLifecycleHooks();
+        $this->registerAuditLog();
+        $this->registerGates();
+        $this->registerRoutes();
+    }
+
+    /**
+     * One listener for one event, so nothing that changes queue state can be
+     * audited in one place and forgotten in another.
+     */
+    protected function registerAuditLog(): void
+    {
+        $this->app->make(Dispatcher::class)->listen(
+            ActionPerformed::class,
+            fn (ActionPerformed $event) => $this->app->make(Yardmaster::class)->rescue(
+                fn () => $this->app->make(AuditLog::class)->record($event),
+            ),
+        );
+    }
+
+    /**
+     * Deny by default outside local development.
+     *
+     * An application that has not thought about who may empty its production
+     * queues should not have a dashboard that lets anyone do it. Defining
+     * either gate replaces this entirely.
+     */
+    protected function registerGates(): void
+    {
+        $gate = $this->app->make(Gate::class);
+
+        foreach (['viewYardmaster', 'manageYardmaster'] as $ability) {
+            if (! $gate->has($ability)) {
+                $gate->define($ability, fn ($user = null) => $this->app->environment('local'));
+            }
+        }
+    }
+
+    protected function registerRoutes(): void
+    {
+        if (! $this->config()->get('yardmaster.dashboard.enabled', true)) {
+            return;
+        }
+
+        Route::group([
+            'domain' => $this->config()->get('yardmaster.dashboard.domain'),
+            'prefix' => $this->config()->get('yardmaster.dashboard.path', 'yardmaster'),
+            'middleware' => array_merge(
+                (array) $this->config()->get('yardmaster.dashboard.middleware', ['web']),
+                [Authorize::class],
+            ),
+        ], function () {
+            $this->loadRoutesFrom(__DIR__.'/../routes/dashboard.php');
+        });
     }
 
     /**

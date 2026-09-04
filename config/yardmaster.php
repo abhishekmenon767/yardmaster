@@ -29,6 +29,23 @@ return [
         'connection' => env('YARDMASTER_DB_CONNECTION'),
         'runs_table' => 'yard_runs',
         'buckets_table' => 'yard_buckets',
+        'actions_table' => 'yard_actions',
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
+    | Dashboard
+    |---------------------------------------------------------------------------
+    | Two gates guard it, and they are separate on purpose: 'viewYardmaster'
+    | for reading, 'manageYardmaster' for anything that changes queue state.
+    | Neither is granted outside the local environment until you define it.
+    */
+
+    'dashboard' => [
+        'enabled' => env('YARDMASTER_DASHBOARD', true),
+        'path' => env('YARDMASTER_PATH', 'yardmaster'),
+        'domain' => env('YARDMASTER_DOMAIN'),
+        'middleware' => ['web'],
     ],
 
     /*

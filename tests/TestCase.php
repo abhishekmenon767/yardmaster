@@ -4,6 +4,7 @@ namespace Iocod\Yardmaster\Tests;
 
 use Aws\MockHandler;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Iocod\Yardmaster\YardmasterServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -53,6 +54,15 @@ abstract class TestCase extends Orchestra
         ]);
         $app['config']->set('queue.default', 'sync');
 
+        // Without this the container binds a null failed-job provider and
+        // failures vanish silently — which is also worth knowing about when
+        // debugging a real application.
+        $app['config']->set('queue.failed', [
+            'driver' => 'database-uuids',
+            'database' => 'testing',
+            'table' => 'failed_jobs',
+        ]);
+
         $this->sqs = new MockHandler;
 
         $app['config']->set('queue.connections.sqs', [
@@ -85,6 +95,11 @@ abstract class TestCase extends Orchestra
         ]);
 
         $app['config']->set('yardmaster.storage.connection', null);
+
+        // The package's own Authorize middleware is appended separately, so
+        // emptying this exercises authorisation without the session and CSRF
+        // machinery of the application's web group.
+        $app['config']->set('yardmaster.dashboard.middleware', []);
         $app['config']->set('yardmaster.retention.runs', '48 hours');
     }
 
@@ -100,7 +115,11 @@ abstract class TestCase extends Orchestra
      */
     protected function runYardmasterMigrations(): void
     {
-        foreach (['create_yard_runs_table', 'create_yard_buckets_table'] as $name) {
+        foreach ([
+            'create_yard_runs_table',
+            'create_yard_buckets_table',
+            'create_yard_actions_table',
+        ] as $name) {
             $migration = require __DIR__."/../database/migrations/{$name}.php.stub";
             $migration->up();
         }
@@ -155,6 +174,20 @@ abstract class TestCase extends Orchestra
         }
 
         return $available = $socket !== false;
+    }
+
+    /**
+     * Grant the dashboard gates for a test.
+     *
+     * Gates are only defined by the package when the application has not, so
+     * defining them here is exactly what an application does.
+     */
+    protected function grantDashboard(bool $manage = true): static
+    {
+        Gate::define('viewYardmaster', fn ($user = null) => true);
+        Gate::define('manageYardmaster', fn ($user = null) => $manage);
+
+        return $this;
     }
 
     /**

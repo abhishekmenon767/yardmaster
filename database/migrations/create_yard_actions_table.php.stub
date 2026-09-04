@@ -1,0 +1,59 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * The audit trail.
+ *
+ * Every operation that changes queue state lands here with who did it. This is
+ * not optional polish: a dashboard that can purge a production queue and cannot
+ * say who did it will not pass a security review, and should not.
+ */
+return new class extends Migration
+{
+    public function getConnection(): ?string
+    {
+        return config('yardmaster.storage.connection');
+    }
+
+    public function up(): void
+    {
+        Schema::connection($this->getConnection())->create(
+            config('yardmaster.storage.actions_table', 'yard_actions'),
+            function (Blueprint $table) {
+                $table->id();
+
+                $table->string('action', 32);
+                $table->string('connection', 64);
+                $table->string('driver', 32);
+                $table->string('queue', 128)->nullable();
+                $table->string('target')->nullable();
+                $table->boolean('succeeded')->default(true);
+                $table->integer('affected')->nullable();
+
+                // Nullable throughout: an action taken from the console has no
+                // authenticated actor, and recording 'system' would imply one.
+                $table->string('actor_id', 64)->nullable();
+                $table->string('actor_name')->nullable();
+                $table->string('actor_ip', 45)->nullable();
+
+                $table->json('context')->nullable();
+                $table->double('created_at');
+
+                $table->index('created_at');
+                $table->index(['action', 'created_at']);
+                $table->index(['connection', 'created_at']);
+                $table->index('actor_id');
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::connection($this->getConnection())->dropIfExists(
+            config('yardmaster.storage.actions_table', 'yard_actions')
+        );
+    }
+};

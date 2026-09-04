@@ -1,7 +1,15 @@
 {
     "name": "iocod/yardmaster",
     "description": "A driver-agnostic queue dashboard and control plane for Laravel.",
-    "keywords": ["laravel", "queue", "dashboard", "monitoring", "horizon", "sqs", "redis"],
+    "keywords": [
+        "laravel",
+        "queue",
+        "dashboard",
+        "monitoring",
+        "horizon",
+        "sqs",
+        "redis"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
@@ -26,13 +34,18 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Iocod\\Yardmaster\\Tests\\": "tests/"
+            "Iocod\\Yardmaster\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/"
         }
     },
     "extra": {
         "laravel": {
-            "providers": ["Iocod\\Yardmaster\\YardmasterServiceProvider"],
-            "aliases": {"Yardmaster": "Iocod\\Yardmaster\\Facades\\Yardmaster"}
+            "providers": [
+                "Iocod\\Yardmaster\\YardmasterServiceProvider"
+            ],
+            "aliases": {
+                "Yardmaster": "Iocod\\Yardmaster\\Facades\\Yardmaster"
+            }
         }
     },
     "scripts": {

@@ -6,10 +6,9 @@ Horizon is excellent and requires Redis. Pulse works everywhere and is read-only
 Yardmaster is aimed at the gap between them: record every job on every
 connection, and expose exactly the operations each driver can actually perform.
 
-> **Status: phase 2 of 6 — driver adapters and the capability gate.** Recording
-> works end to end on every driver, and live introspection and control work
-> through a capability-negotiated adapter per driver. There is no dashboard yet;
-> that is phase 3.
+> **Status: phase 3 of 6 — the API and dashboard.** Recording, live
+> introspection, control, a versioned JSON API and a compiled Vue dashboard all
+> work end to end. Failure clustering, alerting and the worker fleet are next.
 
 ## What works today
 
@@ -75,6 +74,56 @@ Applications can register their own:
 app(AdapterManager::class)->extend('kafka', fn ($connection, $config) => new KafkaAdapter(...));
 ```
 
+## The dashboard
+
+Visit `/yardmaster`. Assets ship compiled inside the package, so there is no npm
+step, no CDN and nothing to add to a Content-Security-Policy.
+
+Controls render from the capability report rather than from a driver name: on an
+SQS connection, *Inspect* and *Delete* are disabled and say **"The sqs driver
+cannot peek payloads"** on hover. The gate is not decoration — the API refuses
+the same call with the same wording, so a stale page cannot get around it.
+
+### Authorisation
+
+Two gates, and they are separate on purpose. Neither is granted outside `local`
+until you define it:
+
+```php
+Gate::define('viewYardmaster', fn ($user) => $user->isAdmin());
+Gate::define('manageYardmaster', fn ($user) => $user->isOncall());
+```
+
+Everything that changes queue state — purge, delete, promote, retry, discard —
+requires the second gate and is written to `yard_actions` with the actor, their
+IP and what was affected.
+
+### The JSON API
+
+The dashboard is one client of a versioned API, not the only way in:
+
+```
+GET    /yardmaster/api/v1/meta                 capabilities per connection
+GET    /yardmaster/api/v1/queues               live depth, exact or approximate
+GET    /yardmaster/api/v1/queues/jobs          peek without consuming
+GET    /yardmaster/api/v1/runs                 filterable attempt log
+GET    /yardmaster/api/v1/runs/{uuid}          payload, attempt chain, children
+GET    /yardmaster/api/v1/metrics              throughput, percentiles, series
+GET    /yardmaster/api/v1/failures             failed attempts
+GET    /yardmaster/api/v1/actions              audit trail
+GET    /yardmaster/api/v1/stream               server-sent events
+
+POST   /yardmaster/api/v1/queues/purge         } all require
+DELETE /yardmaster/api/v1/queues/jobs          } manageYardmaster
+POST   /yardmaster/api/v1/queues/jobs/promote  } and are audited
+POST   /yardmaster/api/v1/failures/retry       }
+DELETE /yardmaster/api/v1/failures             }
+```
+
+Live updates use server-sent events — one long-lived read connection, no Reverb
+and no websocket server to run first. Append `?live=0` where a proxy buffers
+`text/event-stream` into uselessness; the dashboard falls back to polling.
+
 ## Install
 
 ```bash
@@ -139,10 +188,17 @@ app(Yardmaster::class)->handleExceptionsUsing(fn ($e) => Log::debug($e->getMessa
 ## Development
 
 ```bash
-composer test      # pest
-composer lint      # pint
-composer analyse   # phpstan
+composer test        # pest
+composer lint        # pint
+composer analyse     # phpstan
+npm run build        # rebuild dist/ after changing resources/js
+
+# A real application to click around in, seeded through a real worker:
+vendor/bin/testbench serve
 ```
+
+`dist/` is committed on purpose: an application installs with composer and gets
+a working dashboard without ever running npm.
 
 Redis-backed tests skip automatically without a running server; CI provides one.
 No test ever reaches AWS — the SQS suite replaces the transport with a mock
@@ -160,8 +216,8 @@ abstraction has leaked.
 | --- | --- | --- |
 | 1 | Telemetry spine | **done** |
 | 2 | Driver adapters and the capability gate | **done** (database, redis, sqs) |
-| 3 | JSON API and dashboard | next |
-| 4 | Redis stream ingest, sampling, Octane, serverless | |
+| 3 | JSON API and dashboard | **done** |
+| 4 | Redis stream ingest, sampling, Octane, serverless | next |
 | 5 | Failure clustering, alerting, worker fleet | |
 | 6 | Docs, CI matrix, PHPStan level 9, 1.0 | |
 

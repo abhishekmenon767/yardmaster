@@ -1,6 +1,16 @@
 /vendor
+/node_modules
 /build
 composer.lock
+package-lock.json
 .phpunit.result.cache
 .phpunit.cache
 .DS_Store
+
+# dist/ is intentionally committed: an application installs the package with
+# composer and gets a working dashboard, with no npm step on their side.
+
+# Local workbench state: a developer's own demo database and environment.
+/workbench/.env
+/workbench/database/*.sqlite
+/workbench/database/migrations
