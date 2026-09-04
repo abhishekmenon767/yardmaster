@@ -1,0 +1,61 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Pre-aggregated counters and latency histograms.
+ *
+ * One row per (period, connection, queue, job class, status). Histograms merge
+ * by addition, so a percentile over any range is a column-wise sum of these
+ * rows rather than a scan of yard_runs.
+ */
+return new class extends Migration
+{
+    public function getConnection(): ?string
+    {
+        return config('yardmaster.storage.connection');
+    }
+
+    public function up(): void
+    {
+        Schema::connection($this->getConnection())->create(
+            config('yardmaster.storage.buckets_table', 'yard_buckets'),
+            function (Blueprint $table) {
+                $table->id();
+
+                $table->string('bucket', 8);              // minute | hour | day
+                $table->unsignedBigInteger('period_start'); // unix seconds, floored
+                $table->char('key_hash', 32);             // digest of the grouping tuple
+
+                $table->string('connection', 64);
+                $table->string('queue', 128);
+                $table->string('job_class');
+                $table->string('status', 16);
+
+                $table->unsignedBigInteger('count')->default(0);
+                $table->double('sum_runtime')->default(0);
+                $table->double('min_runtime')->nullable();
+                $table->double('max_runtime')->nullable();
+                $table->double('sum_wait')->default(0);
+
+                // Sparse {bucket index => count} maps. See Support\Histogram.
+                $table->json('runtime_hist')->nullable();
+                $table->json('wait_hist')->nullable();
+
+                $table->unique(['bucket', 'period_start', 'key_hash']);
+                $table->index(['bucket', 'period_start']);
+                $table->index(['bucket', 'job_class', 'period_start']);
+                $table->index(['bucket', 'queue', 'period_start']);
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::connection($this->getConnection())->dropIfExists(
+            config('yardmaster.storage.buckets_table', 'yard_buckets')
+        );
+    }
+};
