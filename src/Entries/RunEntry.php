@@ -37,7 +37,71 @@ final class RunEntry
         public readonly ?array $payload = null,
         public readonly ?string $exceptionClass = null,
         public readonly ?string $exceptionMessage = null,
+        /**
+         * The fraction of attempts being recorded when this one was captured.
+         * Carried through so aggregates can be scaled back up and marked
+         * approximate rather than silently under-reporting.
+         */
+        public readonly float $sampleRate = 1.0,
     ) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'uuid' => $this->uuid,
+            'job_uuid' => $this->jobUuid,
+            'job_class' => $this->jobClass,
+            'connection' => $this->connection,
+            'queue' => $this->queue,
+            'attempt' => $this->attempt,
+            'status' => $this->status->value,
+            'queued_at' => $this->queuedAt,
+            'started_at' => $this->startedAt,
+            'finished_at' => $this->finishedAt,
+            'wait_ms' => $this->waitMs,
+            'runtime_ms' => $this->runtimeMs,
+            'peak_memory_kb' => $this->peakMemoryKb,
+            'batch_id' => $this->batchId,
+            'parent_uuid' => $this->parentUuid,
+            'tags' => $this->tags,
+            'payload' => $this->payload,
+            'exception_class' => $this->exceptionClass,
+            'exception_message' => $this->exceptionMessage,
+            'sample_rate' => $this->sampleRate,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            uuid: (string) ($data['uuid'] ?? ''),
+            jobUuid: isset($data['job_uuid']) ? (string) $data['job_uuid'] : null,
+            jobClass: (string) ($data['job_class'] ?? 'unknown'),
+            connection: (string) ($data['connection'] ?? ''),
+            queue: (string) ($data['queue'] ?? 'default'),
+            attempt: (int) ($data['attempt'] ?? 1),
+            status: RunStatus::from((string) ($data['status'] ?? 'processed')),
+            queuedAt: isset($data['queued_at']) ? (float) $data['queued_at'] : null,
+            startedAt: (float) ($data['started_at'] ?? 0),
+            finishedAt: isset($data['finished_at']) ? (float) $data['finished_at'] : null,
+            waitMs: isset($data['wait_ms']) ? (float) $data['wait_ms'] : null,
+            runtimeMs: isset($data['runtime_ms']) ? (float) $data['runtime_ms'] : null,
+            peakMemoryKb: isset($data['peak_memory_kb']) ? (int) $data['peak_memory_kb'] : null,
+            batchId: isset($data['batch_id']) ? (string) $data['batch_id'] : null,
+            parentUuid: isset($data['parent_uuid']) ? (string) $data['parent_uuid'] : null,
+            tags: is_array($data['tags'] ?? null) ? array_values(array_filter($data['tags'], 'is_string')) : [],
+            payload: is_array($data['payload'] ?? null) ? $data['payload'] : null,
+            exceptionClass: isset($data['exception_class']) ? (string) $data['exception_class'] : null,
+            exceptionMessage: isset($data['exception_message']) ? (string) $data['exception_message'] : null,
+            sampleRate: (float) ($data['sample_rate'] ?? 1.0),
+        );
+    }
 
     /**
      * @return array<string, mixed>

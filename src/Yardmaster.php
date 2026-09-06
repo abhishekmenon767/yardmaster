@@ -37,6 +37,15 @@ class Yardmaster
     public function __construct(
         protected Application $app,
         protected Buffer $buffer,
+        /**
+         * How many entries may accumulate before the buffer is written.
+         *
+         * One means every attempt is durable the instant it ends, at the cost
+         * of paying the aggregate write once per job. Raising it amortises that
+         * cost across a batch and risks losing at most this many attempts if a
+         * worker is killed outright — telemetry, never work.
+         */
+        protected int $flushThreshold = 1,
     ) {}
 
     /**
@@ -55,6 +64,10 @@ class Yardmaster
         }
 
         $this->buffer->push($entry);
+
+        if ($this->buffer->count() >= $this->flushThreshold) {
+            $this->flush();
+        }
     }
 
     /**

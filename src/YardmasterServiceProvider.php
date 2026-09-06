@@ -8,14 +8,15 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\Queue;
 use Illuminate\Support\Facades\Route;
 use Iocod\Yardmaster\Actions\AuditLog;
+use Iocod\Yardmaster\Commands\RestartCommand;
 use Iocod\Yardmaster\Commands\TrimCommand;
+use Iocod\Yardmaster\Commands\WorkCommand;
 use Iocod\Yardmaster\Contracts\Ingest;
 use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Events\ActionPerformed;
 use Iocod\Yardmaster\Http\Middleware\Authorize;
 use Iocod\Yardmaster\Support\PayloadInjector;
 use Iocod\Yardmaster\Support\Redactor;
-use Laravel\Octane\Events\RequestReceived;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -32,7 +33,7 @@ class YardmasterServiceProvider extends PackageServiceProvider
                 'create_yard_actions_table',
             ])
             ->hasViews('yardmaster')
-            ->hasCommand(TrimCommand::class);
+            ->hasCommands([TrimCommand::class, WorkCommand::class, RestartCommand::class]);
     }
 
     protected function config(): Repository
@@ -49,6 +50,7 @@ class YardmasterServiceProvider extends PackageServiceProvider
         $this->app->singleton(Yardmaster::class, fn ($app) => new Yardmaster(
             $app,
             $app->make(Buffer::class),
+            max(1, (int) $app->make(Repository::class)->get('yardmaster.ingest.flush_threshold', 1)),
         ));
 
         $this->app->singleton(AdapterManager::class, fn ($app) => new AdapterManager(
@@ -72,7 +74,14 @@ class YardmasterServiceProvider extends PackageServiceProvider
                 );
             }
 
-            return $app->make($class);
+            $settings = $app->make(Repository::class)
+                ->get("yardmaster.ingest.drivers.{$driver}", []);
+
+            // Passed under a distinct name so it cannot collide with the
+            // config repository that other ingest drivers take.
+            return $app->make($class, [
+                'settings' => is_array($settings) ? $settings : [],
+            ]);
         });
     }
 
@@ -177,9 +186,9 @@ class YardmasterServiceProvider extends PackageServiceProvider
     /**
      * Flush on the way out, and reset between Octane requests.
      *
-     * Without the Octane reset a worker serving a second request inherits the
-     * first request's buffer and current-job pointer, which shows up as jobs
-     * attributed to the wrong parent — a quiet, confusing bug.
+     * The Octane hooks are registered by event name rather than class, so they
+     * exist whether or not Octane is installed — and can be exercised by the
+     * test suite without it.
      */
     protected function registerLifecycleHooks(): void
     {
@@ -187,11 +196,22 @@ class YardmasterServiceProvider extends PackageServiceProvider
             $this->app->make(Yardmaster::class)->flush();
         });
 
-        if (class_exists(RequestReceived::class)) {
-            $this->app->make(Dispatcher::class)->listen(
-                RequestReceived::class,
-                fn () => $this->app->make(Yardmaster::class)->reset(),
-            );
-        }
+        $events = $this->app->make(Dispatcher::class);
+
+        $events->listen('Laravel\Octane\Events\RequestReceived', function () {
+            // A worker serving its second request must not inherit the first
+            // one's buffer or current-job pointer. That leak shows up as jobs
+            // attributed to the wrong parent: quiet, and very confusing.
+            $this->app->make(Yardmaster::class)->reset();
+        });
+
+        $events->listen('Laravel\Octane\Events\RequestTerminated', function () {
+            // Octane never fires the framework's terminating callbacks the way
+            // a fresh process does, so the buffer is drained here instead —
+            // otherwise it grows until the worker is recycled.
+            $yardmaster = $this->app->make(Yardmaster::class);
+            $yardmaster->flush();
+            $yardmaster->reset();
+        });
     }
 }

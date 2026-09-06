@@ -6,6 +6,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Redis\Connections\Connection;
+use Iocod\Yardmaster\Concerns\CallsRedis;
 use Iocod\Yardmaster\Values\PendingJob;
 use Iocod\Yardmaster\Values\QueueDepth;
 
@@ -20,6 +21,8 @@ use Iocod\Yardmaster\Values\QueueDepth;
  */
 class RedisAdapter extends Adapter
 {
+    use CallsRedis;
+
     /**
      * Redis has no per-job handle, so a job is addressed by its payload uuid
      * and located by scanning. This caps how far that scan will go before
@@ -312,24 +315,6 @@ class RedisAdapter extends Adapter
         $decoded = json_decode($member, true);
 
         return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * Dispatch a command whose signature differs between the two Redis clients.
-     *
-     * Laravel's PhpRedisConnection normalises SCAN's options array and LREM's
-     * argument order to predis' shape, so these calls are correct on both — but
-     * the connection is abstract, so which concrete signature applies is only
-     * knowable at runtime. Calling dynamically states that honestly instead of
-     * asserting a client the adapter has not got.
-     *
-     * @param  array<int, mixed>  $arguments
-     */
-    protected function call(string $method, array $arguments): mixed
-    {
-        $connection = $this->redis();
-
-        return $connection->{$method}(...$arguments);
     }
 
     protected function redis(): Connection

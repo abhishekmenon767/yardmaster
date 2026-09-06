@@ -36,6 +36,7 @@ final class BucketDelta
         public readonly string $queue,
         public readonly string $jobClass,
         public readonly string $status,
+        public readonly float $sampleRate = 1.0,
     ) {}
 
     public function add(RunEntry $entry): void

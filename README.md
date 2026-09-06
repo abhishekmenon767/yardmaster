@@ -6,8 +6,8 @@ Horizon is excellent and requires Redis. Pulse works everywhere and is read-only
 Yardmaster is aimed at the gap between them: record every job on every
 connection, and expose exactly the operations each driver can actually perform.
 
-> **Status: phase 3 of 6 — the API and dashboard.** Recording, live
-> introspection, control, a versioned JSON API and a compiled Vue dashboard all
+> **Status: phase 4 of 6 — scale and hardening.** Recording, control, the API,
+> the dashboard, Redis stream ingest, sampling, Octane and serverless modes all
 > work end to end. Failure clustering, alerting and the worker fleet are next.
 
 ## What works today
@@ -124,6 +124,77 @@ Live updates use server-sent events — one long-lived read connection, no Rever
 and no websocket server to run first. Append `?live=0` where a proxy buffers
 `text/event-stream` into uselessness; the dashboard falls back to polling.
 
+## Cost
+
+Measured, not asserted. 3,000 no-op jobs through a real worker on PHP 8.3 and
+SQLite, median of three runs, each starting from an empty table:
+
+| Configuration | ms per job | Overhead |
+| --- | ---: | ---: |
+| Yardmaster disabled | 0.079 | — |
+| `database` ingest, `flush_threshold=1` (default) | 1.095 | **1.02 ms** |
+| `database` ingest, `flush_threshold=25` | 0.267 | **0.19 ms** |
+| `redis` ingest, `flush_threshold=1` | 0.200 | **0.12 ms** |
+| `redis` ingest, `flush_threshold=25` | 0.177 | **0.10 ms** |
+
+Read that table before tuning anything. The default is the safe one: every
+attempt is durable the instant it ends, so a worker killed outright loses
+nothing. It is also the slowest, because the aggregate write is paid once per
+job rather than once per batch.
+
+Two knobs, in the order worth reaching for them:
+
+1. **Raise `flush_threshold`** — an 8× improvement for a database ingest, at the
+   cost of losing up to that many *attempts* if a worker is killed outright.
+   What is at risk is telemetry, never work.
+2. **Switch to `redis` ingest** — a flush becomes one `XADD` and aggregation
+   moves to a separate process, which is why batching barely matters there.
+
+SQLite's per-statement cost dominates the database rows above; MySQL and
+Postgres will land elsewhere. Run the numbers on your own hardware before
+quoting them.
+
+## Scaling the ingest
+
+```env
+YARDMASTER_INGEST_DRIVER=redis
+YARDMASTER_REDIS_CONNECTION=yardmaster   # not the one your queue uses
+```
+
+```bash
+php artisan yard:work        # drain the stream into storage
+php artisan yard:restart     # ask drainers to stand down, during deploys
+```
+
+Run `yard:work` under a process monitor next to your queue workers. The stream
+is capped, so a drainer that falls behind or dies costs bounded memory and drops
+the oldest telemetry rather than filling the Redis instance your application
+depends on. Only one drainer runs at a time — two would read the same batch and
+write it twice, quietly doubling every count on the dashboard.
+
+**No long-lived processes** (Vapor, Cloud Run, Lambda)? Put it on the scheduler:
+
+```php
+Schedule::command('yard:work --once')->everyMinute();
+Schedule::command('yard:trim')->everyFifteenMinutes();
+```
+
+**Octane** is handled: the buffer is drained on `RequestTerminated` and cleared
+on `RequestReceived`, so a worker serving its second request never inherits the
+first one's state.
+
+## Sampling
+
+```env
+YARDMASTER_SAMPLE=0.1   # record one attempt in ten
+```
+
+Sampled figures are **scaled back up and marked approximate** rather than
+silently under-reported, and buckets never mix rates: an estimate scaled from
+10% and an exact count are different kinds of number, and adding them would
+produce a third kind that is neither. Latency percentiles are unaffected — a
+sample of a distribution has the same shape as the whole.
+
 ## Install
 
 ```bash
@@ -143,6 +214,9 @@ Schedule the trimmer:
 ```php
 Schedule::command('yard:trim')->everyFifteenMinutes();
 ```
+
+That is the whole installation for most applications: the default `database`
+ingest needs no extra process at all.
 
 ## Design notes
 
@@ -217,8 +291,8 @@ abstraction has leaked.
 | 1 | Telemetry spine | **done** |
 | 2 | Driver adapters and the capability gate | **done** (database, redis, sqs) |
 | 3 | JSON API and dashboard | **done** |
-| 4 | Redis stream ingest, sampling, Octane, serverless | next |
-| 5 | Failure clustering, alerting, worker fleet | |
+| 4 | Redis stream ingest, sampling, Octane, serverless | **done** |
+| 5 | Failure clustering, alerting, worker fleet | next |
 | 6 | Docs, CI matrix, PHPStan level 9, 1.0 | |
 
 Static analysis currently passes at **level 8**. Level 9 needs typed config

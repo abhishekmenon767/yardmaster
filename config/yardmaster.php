@@ -1,6 +1,7 @@
 <?php
 
 use Iocod\Yardmaster\Ingest\DatabaseIngest;
+use Iocod\Yardmaster\Ingest\RedisIngest;
 use Iocod\Yardmaster\Recorders\JobRuns;
 
 return [
@@ -53,15 +54,37 @@ return [
     | Ingest
     |---------------------------------------------------------------------------
     | 'database' writes buffered entries straight through and needs no extra
-    | process. The Redis stream driver arrives in phase 4 for applications that
-    | outgrow direct writes.
+    | process — the right default, and fine well past most applications' volume.
+    |
+    | 'redis' turns a flush into a single XADD and moves aggregation onto a
+    | `yard:work` daemon. Use a different Redis connection from any Redis-backed
+    | queue: telemetry competing with the queue it measures is a poor trade.
     */
 
     'ingest' => [
         'driver' => env('YARDMASTER_INGEST_DRIVER', 'database'),
 
+        /*
+         * Entries buffered before the write happens. One makes every attempt
+         * durable the instant it ends; raising it amortises the aggregate write
+         * across a batch and risks losing at most this many attempts if a
+         * worker is killed outright. What is at risk is telemetry, never work.
+         */
+        'flush_threshold' => (int) env('YARDMASTER_FLUSH_THRESHOLD', 1),
+
         'drivers' => [
             'database' => ['via' => DatabaseIngest::class],
+
+            'redis' => [
+                'via' => RedisIngest::class,
+                'connection' => env('YARDMASTER_REDIS_CONNECTION', 'default'),
+                'stream' => 'yardmaster:ingest',
+                // Capped on purpose. A drainer that falls behind or dies costs
+                // bounded memory and loses the oldest telemetry, rather than
+                // filling the Redis instance the application depends on.
+                'trim' => (int) env('YARDMASTER_INGEST_TRIM', 10000),
+                'chunk' => 250,
+            ],
         ],
     ],
 

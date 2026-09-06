@@ -82,6 +82,7 @@ class DatabaseIngest implements Ingest
                 $entry->queue,
                 $entry->jobClass,
                 $entry->status->value,
+                (string) $entry->sampleRate,
             );
 
             $deltas[$key] ??= new BucketDelta(
@@ -91,6 +92,7 @@ class DatabaseIngest implements Ingest
                 queue: $entry->queue,
                 jobClass: $entry->jobClass,
                 status: $entry->status->value,
+                sampleRate: $entry->sampleRate,
             );
 
             $deltas[$key]->add($entry);
@@ -128,6 +130,7 @@ class DatabaseIngest implements Ingest
                     'queue' => $delta->queue,
                     'job_class' => $delta->jobClass,
                     'status' => $delta->status,
+                    'sample_rate' => $delta->sampleRate,
                     'count' => $delta->count,
                     'sum_runtime' => $delta->sumRuntime,
                     'min_runtime' => $delta->minRuntime,

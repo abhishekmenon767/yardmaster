@@ -9,6 +9,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\JobReleasedAfterException;
 use Illuminate\Queue\Events\JobTimedOut;
+use Illuminate\Queue\Events\WorkerStopping;
 use Illuminate\Support\Str;
 use Iocod\Yardmaster\Entries\RunEntry;
 use Iocod\Yardmaster\Enums\RunStatus;
@@ -30,6 +31,10 @@ class JobRuns
      * @var array<int, class-string>
      */
     public array $listen = [
+        // Workers are long-lived, so the framework's terminating callbacks
+        // never arrive. Anything still buffered is written as the worker winds
+        // down instead.
+        WorkerStopping::class,
         JobProcessing::class,
         JobProcessed::class,
         JobExceptionOccurred::class,
@@ -63,6 +68,7 @@ class JobRuns
             $event instanceof JobReleasedAfterException => $this->close($event->connectionName, $event->job, RunStatus::Released),
             $event instanceof JobFailed => $this->close($event->connectionName, $event->job, RunStatus::Failed, $event->exception),
             $event instanceof JobTimedOut => $this->close($event->connectionName, $event->job, RunStatus::TimedOut),
+            $event instanceof WorkerStopping => $this->yardmaster->flush(),
             default => null,
         });
     }
@@ -112,9 +118,9 @@ class JobRuns
             return;
         }
 
-        if (! $this->sampled()) {
-            $this->yardmaster->flush();
+        $rate = $this->sampleRate();
 
+        if (! $this->sampled($rate)) {
             return;
         }
 
@@ -151,12 +157,9 @@ class JobRuns
             payload: $this->capturePayload($payload),
             exceptionClass: $exception === null ? null : $exception::class,
             exceptionMessage: $exception?->getMessage(),
+            sampleRate: $rate,
         ));
 
-        // Workers are long-lived, so app termination never arrives. Draining
-        // once per attempt keeps the buffer shallow and bounds how much
-        // telemetry a hard worker kill can lose to a single job.
-        $this->yardmaster->flush();
     }
 
     /**
@@ -217,10 +220,15 @@ class JobRuns
         return false;
     }
 
-    protected function sampled(): bool
+    protected function sampleRate(): float
     {
         $rate = (float) ($this->config['sample'] ?? 1.0);
 
+        return max(0.0, min(1.0, $rate));
+    }
+
+    protected function sampled(float $rate): bool
+    {
         return $rate >= 1.0 || (mt_rand() / mt_getrandmax()) < $rate;
     }
 

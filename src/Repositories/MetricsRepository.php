@@ -52,23 +52,32 @@ class MetricsRepository
         $period = $this->resolvePeriod($from, $to);
 
         $rows = $this->query($period, $from, $to, $filters)
-            ->select('status', 'count', 'sum_runtime', 'min_runtime', 'max_runtime', 'sum_wait', 'runtime_hist', 'wait_hist')
+            ->select('status', 'count', 'sample_rate', 'sum_runtime', 'min_runtime', 'max_runtime', 'sum_wait', 'runtime_hist', 'wait_hist')
             ->get();
 
         $byStatus = [];
         $runtime = [];
         $wait = [];
         $total = 0;
+        $observed = 0;
         $sumRuntime = 0.0;
+        $sampled = false;
 
         foreach ($rows as $row) {
             $row = (array) $row;
+            $rate = $this->rate($row);
             $count = (int) $row['count'];
+
+            // Scale sampled counts back up. Latency percentiles are unaffected:
+            // a sample of a distribution has the same shape as the whole.
+            $scaled = (int) round($count / $rate);
+            $sampled = $sampled || $rate < 1.0;
             $status = (string) $row['status'];
 
-            $total += $count;
+            $observed += $count;
+            $total += $scaled;
             $sumRuntime += (float) $row['sum_runtime'];
-            $byStatus[$status] = ($byStatus[$status] ?? 0) + $count;
+            $byStatus[$status] = ($byStatus[$status] ?? 0) + $scaled;
 
             $runtime[] = Histogram::decode($this->text($row['runtime_hist'] ?? null));
             $wait[] = Histogram::decode($this->text($row['wait_hist'] ?? null));
@@ -84,12 +93,17 @@ class MetricsRepository
             'to' => $to,
             'period' => $period->value,
             'total' => $total,
+            // True when any figure here was scaled up from a sample. The
+            // dashboard prefixes approximate numbers with '~' rather than
+            // presenting an estimate as a count.
+            'approximate' => $sampled,
+            'observed' => $observed,
             'by_status' => $byStatus,
             'failed' => $failed,
             'failure_rate' => $total > 0 ? round($failed / $total, 4) : 0.0,
             'throughput_per_minute' => round($total / max(1, ($to - $from) / 60), 2),
             'runtime_ms' => [
-                'mean' => $total > 0 ? round($sumRuntime / $total, 2) : null,
+                'mean' => $observed > 0 ? round($sumRuntime / $observed, 2) : null,
                 'p50' => $this->round(Histogram::percentile($runtime, 0.50)),
                 'p95' => $this->round(Histogram::percentile($runtime, 0.95)),
                 'p99' => $this->round(Histogram::percentile($runtime, 0.99)),
@@ -117,9 +131,9 @@ class MetricsRepository
         $step = $period->seconds();
 
         $rows = $this->query($period, $from, $to, $filters)
-            ->select('period_start', 'status')
+            ->select('period_start', 'status', 'sample_rate')
             ->selectRaw('SUM(count) as total')
-            ->groupBy('period_start', 'status')
+            ->groupBy('period_start', 'status', 'sample_rate')
             ->get();
 
         $points = [];
@@ -136,7 +150,7 @@ class MetricsRepository
                 continue;
             }
 
-            $count = (int) $row['total'];
+            $count = (int) round((int) $row['total'] / $this->rate($row));
             $points[$at]['total'] += $count;
 
             $key = match ((string) $row['status']) {
@@ -165,7 +179,7 @@ class MetricsRepository
         $period = $this->resolvePeriod($from, $to);
 
         $rows = $this->query($period, $from, $to, $filters)
-            ->select('job_class', 'status', 'count', 'sum_runtime', 'runtime_hist')
+            ->select('job_class', 'status', 'count', 'sample_rate', 'sum_runtime', 'runtime_hist')
             ->get();
 
         $classes = [];
@@ -177,13 +191,16 @@ class MetricsRepository
             $classes[$class] ??= [
                 'job_class' => $class,
                 'total' => 0,
+                'observed' => 0,
                 'failed' => 0,
                 'sum_runtime' => 0.0,
                 'histogram' => [],
             ];
 
-            $count = (int) $row['count'];
+            $rate = $this->rate($row);
+            $count = (int) round((int) $row['count'] / $rate);
             $classes[$class]['total'] += $count;
+            $classes[$class]['observed'] += (int) $row['count'];
             $classes[$class]['sum_runtime'] += (float) $row['sum_runtime'];
 
             if (in_array((string) $row['status'], ['failed', 'timed_out'], true)) {
@@ -204,8 +221,8 @@ class MetricsRepository
                 'failure_rate' => $class['total'] > 0
                     ? round($class['failed'] / $class['total'], 4)
                     : 0.0,
-                'mean_ms' => $class['total'] > 0
-                    ? round($class['sum_runtime'] / $class['total'], 2)
+                'mean_ms' => $class['observed'] > 0
+                    ? round($class['sum_runtime'] / $class['observed'], 2)
                     : null,
                 'p95_ms' => $this->round(Histogram::percentile($class['histogram'], 0.95)),
             ];
@@ -271,6 +288,16 @@ class MetricsRepository
 
         return $this->db->connection(is_string($connection) ? $connection : null)
             ->table(is_string($table) ? $table : 'yard_buckets');
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    protected function rate(array $row): float
+    {
+        $rate = (float) ($row['sample_rate'] ?? 1.0);
+
+        return $rate > 0.0 ? $rate : 1.0;
     }
 
     protected function text(mixed $value): ?string
