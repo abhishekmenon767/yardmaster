@@ -1,8 +1,8 @@
 <?php
 
+use Abhishek\Yardmaster\Repositories\MetricsRepository;
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 use Illuminate\Support\Facades\DB;
-use Iocod\Yardmaster\Repositories\MetricsRepository;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 it('stamps every recorded attempt with the rate it was sampled at', function () {
     foreach (range(1, 60) as $i) {

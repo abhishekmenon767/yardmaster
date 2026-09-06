@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Alerts;
+namespace Abhishek\Yardmaster\Alerts;
 
-use Iocod\Yardmaster\Support\Cast;
+use Abhishek\Yardmaster\Support\Cast;
 
 /**
  * One thing worth being woken up for.

@@ -1,6 +1,6 @@
 <?php
 
-use Iocod\Yardmaster\Support\Histogram;
+use Abhishek\Yardmaster\Support\Histogram;
 
 it('places durations in decade-tenth buckets', function () {
     expect(Histogram::bucketFor(0.4))->toBe(0)

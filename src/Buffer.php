@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster;
+namespace Abhishek\Yardmaster;
 
-use Iocod\Yardmaster\Entries\RunEntry;
+use Abhishek\Yardmaster\Entries\RunEntry;
 
 /**
  * A per-process holding area for entries awaiting ingest.

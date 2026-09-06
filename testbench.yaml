@@ -1,5 +1,5 @@
 providers:
-  - Iocod\Yardmaster\YardmasterServiceProvider
+  - Abhishek\Yardmaster\YardmasterServiceProvider
 
 env:
   - APP_ENV=local

@@ -1,9 +1,9 @@
 <?php
 
-namespace Iocod\Yardmaster\Support;
+namespace Abhishek\Yardmaster\Support;
 
+use Abhishek\Yardmaster\Yardmaster;
 use Illuminate\Database\Eloquent\Model;
-use Iocod\Yardmaster\Yardmaster;
 use ReflectionObject;
 
 /**

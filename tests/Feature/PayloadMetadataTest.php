@@ -1,11 +1,11 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\DispatchingJob;
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
+use Abhishek\Yardmaster\Tests\Fixtures\Widget;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Iocod\Yardmaster\Tests\Fixtures\DispatchingJob;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
-use Iocod\Yardmaster\Tests\Fixtures\Widget;
 
 it('never stores the serialized command', function () {
     SucceedingJob::dispatch('hello');

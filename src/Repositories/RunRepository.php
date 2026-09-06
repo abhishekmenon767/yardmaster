@@ -1,11 +1,11 @@
 <?php
 
-namespace Iocod\Yardmaster\Repositories;
+namespace Abhishek\Yardmaster\Repositories;
 
+use Abhishek\Yardmaster\Support\Cast;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
-use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Reads the per-attempt run log.

@@ -1,9 +1,9 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Controllers;
+namespace Abhishek\Yardmaster\Http\Controllers;
 
+use Abhishek\Yardmaster\Http\StreamPayload;
 use Illuminate\Http\Request;
-use Iocod\Yardmaster\Http\StreamPayload;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**

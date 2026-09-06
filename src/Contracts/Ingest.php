@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Contracts;
+namespace Abhishek\Yardmaster\Contracts;
 
-use Iocod\Yardmaster\Entries\RunEntry;
+use Abhishek\Yardmaster\Entries\RunEntry;
 
 interface Ingest
 {

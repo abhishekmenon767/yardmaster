@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Tests;
+namespace Abhishek\Yardmaster\Tests;
 
-use Iocod\Yardmaster\Recorders\JobRuns;
+use Abhishek\Yardmaster\Recorders\JobRuns;
 
 /**
  * Recorders are wired once at boot from config, so proving a config switch

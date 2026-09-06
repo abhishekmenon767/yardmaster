@@ -1,11 +1,11 @@
 <?php
 
-namespace Iocod\Yardmaster\Tests\Contracts;
+namespace Abhishek\Yardmaster\Tests\Contracts;
 
+use Abhishek\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Drivers\QueueDriverAdapter;
+use Abhishek\Yardmaster\Exceptions\UnsupportedCapability;
 use Closure;
-use Iocod\Yardmaster\Drivers\Capability;
-use Iocod\Yardmaster\Drivers\QueueDriverAdapter;
-use Iocod\Yardmaster\Exceptions\UnsupportedCapability;
 
 /**
  * The shared contract every queue driver adapter must satisfy.

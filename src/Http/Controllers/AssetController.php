@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Controllers;
+namespace Abhishek\Yardmaster\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;

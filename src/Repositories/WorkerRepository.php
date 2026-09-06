@@ -1,12 +1,12 @@
 <?php
 
-namespace Iocod\Yardmaster\Repositories;
+namespace Abhishek\Yardmaster\Repositories;
 
+use Abhishek\Yardmaster\Recorders\WorkerHeartbeat;
+use Abhishek\Yardmaster\Support\Cast;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
-use Iocod\Yardmaster\Recorders\WorkerHeartbeat;
-use Iocod\Yardmaster\Support\Cast;
 
 class WorkerRepository
 {

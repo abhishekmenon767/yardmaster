@@ -1,7 +1,7 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\FailingJob;
 use Illuminate\Support\Facades\DB;
-use Iocod\Yardmaster\Tests\Fixtures\FailingJob;
 
 beforeEach(fn () => $this->grantDashboard());
 

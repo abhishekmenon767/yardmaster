@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Support;
+namespace Abhishek\Yardmaster\Support;
 
-use Iocod\Yardmaster\Entries\RunEntry;
+use Abhishek\Yardmaster\Entries\RunEntry;
 
 /**
  * A mutable accumulator for one bucket's worth of entries.

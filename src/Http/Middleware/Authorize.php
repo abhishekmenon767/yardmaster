@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Middleware;
+namespace Abhishek\Yardmaster\Http\Middleware;
 
 use Closure;
 use Illuminate\Contracts\Auth\Access\Gate;

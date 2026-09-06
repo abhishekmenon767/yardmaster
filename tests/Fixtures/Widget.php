@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Tests\Fixtures;
+namespace Abhishek\Yardmaster\Tests\Fixtures;
 
 use Illuminate\Database\Eloquent\Model;
 

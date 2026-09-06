@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Concerns;
+namespace Abhishek\Yardmaster\Concerns;
 
 use Illuminate\Redis\Connections\Connection;
 

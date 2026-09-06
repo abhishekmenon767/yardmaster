@@ -1,16 +1,16 @@
 <?php
 
-namespace Iocod\Yardmaster\Commands;
+namespace Abhishek\Yardmaster\Commands;
 
+use Abhishek\Yardmaster\Alerts\Alert;
+use Abhishek\Yardmaster\Alerts\AlertEvaluator;
+use Abhishek\Yardmaster\Events\AlertFired;
+use Abhishek\Yardmaster\Events\AlertRecovered;
+use Abhishek\Yardmaster\Notifications\QueueAlert;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Notification;
-use Iocod\Yardmaster\Alerts\Alert;
-use Iocod\Yardmaster\Alerts\AlertEvaluator;
-use Iocod\Yardmaster\Events\AlertFired;
-use Iocod\Yardmaster\Events\AlertRecovered;
-use Iocod\Yardmaster\Notifications\QueueAlert;
 
 /**
  * Evaluates the alert rules once. Put it on the scheduler every minute.

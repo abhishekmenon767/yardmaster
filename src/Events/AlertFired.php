@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Events;
+namespace Abhishek\Yardmaster\Events;
 
-use Iocod\Yardmaster\Alerts\Alert;
+use Abhishek\Yardmaster\Alerts\Alert;
 
 class AlertFired
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Commands;
+namespace Abhishek\Yardmaster\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;

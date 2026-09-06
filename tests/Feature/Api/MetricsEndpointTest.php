@@ -1,8 +1,8 @@
 <?php
 
-use Iocod\Yardmaster\Http\StreamPayload;
-use Iocod\Yardmaster\Tests\Fixtures\FailingJob;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
+use Abhishek\Yardmaster\Http\StreamPayload;
+use Abhishek\Yardmaster\Tests\Fixtures\FailingJob;
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 beforeEach(fn () => $this->grantDashboard());
 

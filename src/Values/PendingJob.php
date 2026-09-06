@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Values;
+namespace Abhishek\Yardmaster\Values;
 
-use Iocod\Yardmaster\Support\Cast;
+use Abhishek\Yardmaster\Support\Cast;
 
 /**
  * A job sitting on a queue, seen without consuming it.

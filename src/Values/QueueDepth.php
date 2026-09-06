@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Values;
+namespace Abhishek\Yardmaster\Values;
 
 /**
  * How much work is sitting on one queue, right now.

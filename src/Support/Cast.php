@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Support;
+namespace Abhishek\Yardmaster\Support;
 
 /**
  * Narrows values of unknown type from config, query rows and JSON payloads.

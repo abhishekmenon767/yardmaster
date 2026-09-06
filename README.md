@@ -32,8 +32,8 @@ A dashboard action is never "delete this job". It is "ask the adapter whether
 deleting by id is possible on this connection, and render accordingly".
 
 ```php
-use Iocod\Yardmaster\Drivers\AdapterManager;
-use Iocod\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Drivers\AdapterManager;
+use Abhishek\Yardmaster\Drivers\Capability;
 
 $adapter = app(AdapterManager::class)->for('sqs');
 
@@ -281,7 +281,7 @@ sample of a distribution has the same shape as the whole.
 ## Install
 
 ```bash
-composer require iocod/yardmaster
+composer require abhishek/yardmaster
 php artisan vendor:publish --tag=yardmaster-migrations
 php artisan migrate
 ```

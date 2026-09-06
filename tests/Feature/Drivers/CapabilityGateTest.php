@@ -1,9 +1,9 @@
 <?php
 
-use Iocod\Yardmaster\Drivers\AdapterManager;
-use Iocod\Yardmaster\Drivers\Capability;
-use Iocod\Yardmaster\Drivers\NullAdapter;
-use Iocod\Yardmaster\Tests\Contracts\AdapterContract;
+use Abhishek\Yardmaster\Drivers\AdapterManager;
+use Abhishek\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Drivers\NullAdapter;
+use Abhishek\Yardmaster\Tests\Contracts\AdapterContract;
 
 /**
  * Tier one of the contract: run the gate assertions over every adapter the

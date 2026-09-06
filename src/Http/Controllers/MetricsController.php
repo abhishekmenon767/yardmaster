@@ -1,10 +1,10 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Controllers;
+namespace Abhishek\Yardmaster\Http\Controllers;
 
+use Abhishek\Yardmaster\Repositories\MetricsRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Iocod\Yardmaster\Repositories\MetricsRepository;
 
 class MetricsController extends Controller
 {

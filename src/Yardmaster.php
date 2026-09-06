@@ -1,11 +1,11 @@
 <?php
 
-namespace Iocod\Yardmaster;
+namespace Abhishek\Yardmaster;
 
+use Abhishek\Yardmaster\Contracts\Ingest;
+use Abhishek\Yardmaster\Entries\RunEntry;
 use Closure;
 use Illuminate\Contracts\Foundation\Application;
-use Iocod\Yardmaster\Contracts\Ingest;
-use Iocod\Yardmaster\Entries\RunEntry;
 use Throwable;
 
 /**

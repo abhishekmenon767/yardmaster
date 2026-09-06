@@ -1,11 +1,11 @@
 <?php
 
-namespace Iocod\Yardmaster\Notifications;
+namespace Abhishek\Yardmaster\Notifications;
 
+use Abhishek\Yardmaster\Alerts\Alert;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Iocod\Yardmaster\Alerts\Alert;
 
 /**
  * The message an operator actually receives.

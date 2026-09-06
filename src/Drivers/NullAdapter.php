@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Drivers;
+namespace Abhishek\Yardmaster\Drivers;
 
-use Iocod\Yardmaster\Values\QueueDepth;
+use Abhishek\Yardmaster\Values\QueueDepth;
 
 /**
  * The adapter for drivers with nothing to introspect — sync, null, and any

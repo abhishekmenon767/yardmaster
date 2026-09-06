@@ -1,9 +1,9 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 use Aws\Result;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 beforeEach(fn () => $this->grantDashboard());
 

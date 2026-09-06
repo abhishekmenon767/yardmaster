@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Support;
+namespace Abhishek\Yardmaster\Support;
 
 /**
  * Masks sensitive values in a captured job payload.

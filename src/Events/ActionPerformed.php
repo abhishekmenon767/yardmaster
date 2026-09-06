@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Events;
+namespace Abhishek\Yardmaster\Events;
 
-use Iocod\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Drivers\Capability;
 
 /**
  * Raised after any operation that changes queue state.

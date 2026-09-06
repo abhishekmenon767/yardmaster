@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Support;
+namespace Abhishek\Yardmaster\Support;
 
 /**
  * A log-scale latency histogram.

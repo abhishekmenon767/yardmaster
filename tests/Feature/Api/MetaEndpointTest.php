@@ -1,6 +1,6 @@
 <?php
 
-use Iocod\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Drivers\Capability;
 use Laravel\Horizon\Horizon;
 
 beforeEach(fn () => $this->grantDashboard());

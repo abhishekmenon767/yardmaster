@@ -1,13 +1,13 @@
 <?php
 
-namespace Iocod\Yardmaster\Alerts;
+namespace Abhishek\Yardmaster\Alerts;
 
+use Abhishek\Yardmaster\Drivers\AdapterManager;
+use Abhishek\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Repositories\MetricsRepository;
+use Abhishek\Yardmaster\Support\Cast;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
-use Iocod\Yardmaster\Drivers\AdapterManager;
-use Iocod\Yardmaster\Drivers\Capability;
-use Iocod\Yardmaster\Repositories\MetricsRepository;
-use Iocod\Yardmaster\Support\Cast;
 use Throwable;
 
 /**

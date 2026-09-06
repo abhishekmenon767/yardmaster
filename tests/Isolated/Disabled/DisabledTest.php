@@ -1,9 +1,9 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 it('records nothing at all when the master switch is off', function () {
     SucceedingJob::dispatch();

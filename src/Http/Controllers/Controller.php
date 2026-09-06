@@ -1,11 +1,11 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Controllers;
+namespace Abhishek\Yardmaster\Http\Controllers;
 
+use Abhishek\Yardmaster\Exceptions\UnsupportedCapability;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller as BaseController;
-use Iocod\Yardmaster\Exceptions\UnsupportedCapability;
 use Throwable;
 
 abstract class Controller extends BaseController

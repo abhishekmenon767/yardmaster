@@ -1,6 +1,6 @@
 <?php
 
-use Iocod\Yardmaster\Support\Redactor;
+use Abhishek\Yardmaster\Support\Redactor;
 
 it('masks matching keys at any depth', function () {
     $redactor = new Redactor(['password', 'access_token']);

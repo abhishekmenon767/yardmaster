@@ -1,9 +1,9 @@
 <?php
 
+use Abhishek\Yardmaster\Drivers\AdapterManager;
+use Abhishek\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Exceptions\UnsupportedCapability;
 use Aws\Result;
-use Iocod\Yardmaster\Drivers\AdapterManager;
-use Iocod\Yardmaster\Drivers\Capability;
-use Iocod\Yardmaster\Exceptions\UnsupportedCapability;
 
 /**
  * SQS is the reason the capability gate exists. It answers roughly how many

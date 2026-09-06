@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Alerts;
+namespace Abhishek\Yardmaster\Alerts;
 
 final class Alert
 {

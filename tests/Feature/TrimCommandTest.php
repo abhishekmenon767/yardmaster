@@ -1,7 +1,7 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 use Illuminate\Support\Facades\DB;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 it('removes runs past the retention window but keeps the buckets', function () {
     SucceedingJob::dispatch();

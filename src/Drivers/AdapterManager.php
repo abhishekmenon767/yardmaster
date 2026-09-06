@@ -1,7 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Drivers;
+namespace Abhishek\Yardmaster\Drivers;
 
+use Abhishek\Yardmaster\Support\Cast;
 use Closure;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Cache\Repository;
@@ -12,7 +13,6 @@ use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\SqsQueue;
-use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Resolves the right adapter for a queue connection.

@@ -1,12 +1,12 @@
 <?php
 
-namespace Iocod\Yardmaster\Tests;
+namespace Abhishek\Yardmaster\Tests;
 
+use Abhishek\Yardmaster\YardmasterServiceProvider;
 use Aws\MockHandler;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
-use Iocod\Yardmaster\YardmasterServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra

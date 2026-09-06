@@ -1,10 +1,10 @@
 <?php
 
-namespace Iocod\Yardmaster\Drivers;
+namespace Abhishek\Yardmaster\Drivers;
 
-use Iocod\Yardmaster\Exceptions\UnsupportedCapability;
-use Iocod\Yardmaster\Values\PendingJob;
-use Iocod\Yardmaster\Values\QueueDepth;
+use Abhishek\Yardmaster\Exceptions\UnsupportedCapability;
+use Abhishek\Yardmaster\Values\PendingJob;
+use Abhishek\Yardmaster\Values\QueueDepth;
 
 /**
  * Live introspection and control for one queue connection.

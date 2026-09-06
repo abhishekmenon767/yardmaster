@@ -1,5 +1,5 @@
 {
-    "name": "iocod/yardmaster",
+    "name": "abhishek/yardmaster",
     "description": "A driver-agnostic queue dashboard and control plane for Laravel.",
     "keywords": [
         "laravel",
@@ -29,22 +29,22 @@
     },
     "autoload": {
         "psr-4": {
-            "Iocod\\Yardmaster\\": "src/"
+            "Abhishek\\Yardmaster\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Iocod\\Yardmaster\\Tests\\": "tests/",
+            "Abhishek\\Yardmaster\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Iocod\\Yardmaster\\YardmasterServiceProvider"
+                "Abhishek\\Yardmaster\\YardmasterServiceProvider"
             ],
             "aliases": {
-                "Yardmaster": "Iocod\\Yardmaster\\Facades\\Yardmaster"
+                "Yardmaster": "Abhishek\\Yardmaster\\Facades\\Yardmaster"
             }
         }
     },

@@ -1,6 +1,6 @@
 <?php
 
-use Iocod\Yardmaster\Support\Fingerprint;
+use Abhishek\Yardmaster\Support\Fingerprint;
 
 it('normalises the parts of a message that vary between identical failures', function () {
     expect(Fingerprint::normalise('Order 4471 failed for ada@example.com at 10.0.0.3'))

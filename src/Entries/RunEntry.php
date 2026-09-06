@@ -1,9 +1,9 @@
 <?php
 
-namespace Iocod\Yardmaster\Entries;
+namespace Abhishek\Yardmaster\Entries;
 
-use Iocod\Yardmaster\Enums\RunStatus;
-use Iocod\Yardmaster\Support\Cast;
+use Abhishek\Yardmaster\Enums\RunStatus;
+use Abhishek\Yardmaster\Support\Cast;
 
 /**
  * One attempt at one job, on any driver.

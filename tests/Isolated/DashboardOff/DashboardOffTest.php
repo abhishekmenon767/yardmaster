@@ -1,7 +1,7 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 use Illuminate\Support\Facades\Gate;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 it('registers no routes at all when the dashboard is switched off', function () {
     Gate::define('viewYardmaster', fn () => true);

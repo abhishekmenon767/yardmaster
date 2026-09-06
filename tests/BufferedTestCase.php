@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Tests;
+namespace Abhishek\Yardmaster\Tests;
 
 /**
  * An application that has traded a little durability for throughput by letting

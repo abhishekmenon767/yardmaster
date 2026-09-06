@@ -1,9 +1,9 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Controllers;
+namespace Abhishek\Yardmaster\Http\Controllers;
 
+use Abhishek\Yardmaster\Repositories\WorkerRepository;
 use Illuminate\Http\JsonResponse;
-use Iocod\Yardmaster\Repositories\WorkerRepository;
 
 class WorkerController extends Controller
 {

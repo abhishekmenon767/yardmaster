@@ -1,13 +1,13 @@
 <?php
 
-namespace Iocod\Yardmaster\Repositories;
+namespace Abhishek\Yardmaster\Repositories;
 
+use Abhishek\Yardmaster\Enums\Period;
+use Abhishek\Yardmaster\Support\Cast;
+use Abhishek\Yardmaster\Support\Histogram;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
-use Iocod\Yardmaster\Enums\Period;
-use Iocod\Yardmaster\Support\Cast;
-use Iocod\Yardmaster\Support\Histogram;
 
 /**
  * Reads the pre-aggregated buckets.

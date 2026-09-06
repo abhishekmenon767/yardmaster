@@ -1,10 +1,10 @@
 <?php
 
+use Abhishek\Yardmaster\Enums\Period;
+use Abhishek\Yardmaster\Support\Histogram;
+use Abhishek\Yardmaster\Tests\Fixtures\FailingJob;
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
 use Illuminate\Support\Facades\DB;
-use Iocod\Yardmaster\Enums\Period;
-use Iocod\Yardmaster\Support\Histogram;
-use Iocod\Yardmaster\Tests\Fixtures\FailingJob;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
 
 it('rolls every attempt into minute, hour and day buckets', function () {
     SucceedingJob::dispatch();

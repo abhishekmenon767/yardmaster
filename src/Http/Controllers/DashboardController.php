@@ -1,11 +1,11 @@
 <?php
 
-namespace Iocod\Yardmaster\Http\Controllers;
+namespace Abhishek\Yardmaster\Http\Controllers;
 
+use Abhishek\Yardmaster\Support\Cast;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Contracts\View\View;
-use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Serves the single-page app shell.

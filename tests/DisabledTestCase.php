@@ -1,6 +1,6 @@
 <?php
 
-namespace Iocod\Yardmaster\Tests;
+namespace Abhishek\Yardmaster\Tests;
 
 abstract class DisabledTestCase extends TestCase
 {

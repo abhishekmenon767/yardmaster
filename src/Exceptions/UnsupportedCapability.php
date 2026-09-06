@@ -1,8 +1,8 @@
 <?php
 
-namespace Iocod\Yardmaster\Exceptions;
+namespace Abhishek\Yardmaster\Exceptions;
 
-use Iocod\Yardmaster\Drivers\Capability;
+use Abhishek\Yardmaster\Drivers\Capability;
 use RuntimeException;
 
 /**

@@ -1,9 +1,9 @@
 <?php
 
+use Abhishek\Yardmaster\Tests\Fixtures\FailingJob;
+use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
+use Abhishek\Yardmaster\Tests\TestCase;
 use Illuminate\Support\Facades\DB;
-use Iocod\Yardmaster\Tests\Fixtures\FailingJob;
-use Iocod\Yardmaster\Tests\Fixtures\SucceedingJob;
-use Iocod\Yardmaster\Tests\TestCase;
 
 /**
  * The Plane A guarantee: identical telemetry on every driver, with no driver

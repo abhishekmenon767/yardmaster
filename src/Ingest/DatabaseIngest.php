@@ -1,17 +1,17 @@
 <?php
 
-namespace Iocod\Yardmaster\Ingest;
+namespace Abhishek\Yardmaster\Ingest;
 
+use Abhishek\Yardmaster\Contracts\Ingest;
+use Abhishek\Yardmaster\Entries\RunEntry;
+use Abhishek\Yardmaster\Enums\Period;
+use Abhishek\Yardmaster\Support\BucketDelta;
+use Abhishek\Yardmaster\Support\Cast;
+use Abhishek\Yardmaster\Support\Fingerprint;
+use Abhishek\Yardmaster\Support\Histogram;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
-use Iocod\Yardmaster\Contracts\Ingest;
-use Iocod\Yardmaster\Entries\RunEntry;
-use Iocod\Yardmaster\Enums\Period;
-use Iocod\Yardmaster\Support\BucketDelta;
-use Iocod\Yardmaster\Support\Cast;
-use Iocod\Yardmaster\Support\Fingerprint;
-use Iocod\Yardmaster\Support\Histogram;
 
 /**
  * Writes buffered entries straight to the database.
