@@ -1,0 +1,61 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Failures, grouped into the problems they actually are.
+ *
+ * One row per distinct failure rather than per occurrence, so a bad deploy
+ * reads as one issue with a count instead of forty thousand rows nobody can
+ * act on.
+ */
+return new class extends Migration
+{
+    public function getConnection(): ?string
+    {
+        return config('yardmaster.storage.connection');
+    }
+
+    public function up(): void
+    {
+        Schema::connection($this->getConnection())->create(
+            config('yardmaster.storage.issues_table', 'yard_issues'),
+            function (Blueprint $table) {
+                $table->id();
+
+                $table->char('fingerprint', 32)->unique();
+                $table->string('exception_class');
+                $table->text('normalised_message');
+                $table->text('sample_message')->nullable();
+                $table->string('frame')->nullable();
+                $table->string('job_class');
+
+                $table->unsignedBigInteger('occurrences')->default(0);
+                $table->double('first_seen');
+                $table->double('last_seen');
+
+                // open | ignored | resolved. An issue that has been dealt with
+                // should stop shouting, and one that is expected should never
+                // have started.
+                $table->string('status', 16)->default('open');
+                $table->double('resolved_at')->nullable();
+                $table->string('resolved_by')->nullable();
+
+                $table->char('sample_run_uuid', 36)->nullable();
+
+                $table->index(['status', 'last_seen']);
+                $table->index('last_seen');
+                $table->index(['job_class', 'last_seen']);
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::connection($this->getConnection())->dropIfExists(
+            config('yardmaster.storage.issues_table', 'yard_issues')
+        );
+    }
+};

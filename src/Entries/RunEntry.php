@@ -37,6 +37,10 @@ final class RunEntry
         public readonly ?array $payload = null,
         public readonly ?string $exceptionClass = null,
         public readonly ?string $exceptionMessage = null,
+        /** First application frame, as `file:line`. */
+        public readonly ?string $exceptionFrame = null,
+        /** Identity of the failure this attempt is an occurrence of. */
+        public readonly ?string $fingerprint = null,
         /**
          * The fraction of attempts being recorded when this one was captured.
          * Carried through so aggregates can be scaled back up and marked
@@ -70,6 +74,8 @@ final class RunEntry
             'payload' => $this->payload,
             'exception_class' => $this->exceptionClass,
             'exception_message' => $this->exceptionMessage,
+            'exception_frame' => $this->exceptionFrame,
+            'fingerprint' => $this->fingerprint,
             'sample_rate' => $this->sampleRate,
         ];
     }
@@ -99,6 +105,8 @@ final class RunEntry
             payload: is_array($data['payload'] ?? null) ? $data['payload'] : null,
             exceptionClass: isset($data['exception_class']) ? (string) $data['exception_class'] : null,
             exceptionMessage: isset($data['exception_message']) ? (string) $data['exception_message'] : null,
+            exceptionFrame: isset($data['exception_frame']) ? (string) $data['exception_frame'] : null,
+            fingerprint: isset($data['fingerprint']) ? (string) $data['fingerprint'] : null,
             sampleRate: (float) ($data['sample_rate'] ?? 1.0),
         );
     }
@@ -130,6 +138,8 @@ final class RunEntry
             'exception_message' => $this->exceptionMessage === null
                 ? null
                 : mb_substr($this->exceptionMessage, 0, 2000),
+            'exception_frame' => $this->exceptionFrame,
+            'fingerprint' => $this->fingerprint,
         ];
     }
 }

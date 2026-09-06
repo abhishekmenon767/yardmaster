@@ -13,6 +13,7 @@ use Illuminate\Queue\Events\WorkerStopping;
 use Illuminate\Support\Str;
 use Iocod\Yardmaster\Entries\RunEntry;
 use Iocod\Yardmaster\Enums\RunStatus;
+use Iocod\Yardmaster\Support\Fingerprint;
 use Iocod\Yardmaster\Support\Redactor;
 use Iocod\Yardmaster\Yardmaster;
 use Throwable;
@@ -57,6 +58,7 @@ class JobRuns
         protected Yardmaster $yardmaster,
         protected Redactor $redactor,
         protected array $config = [],
+        protected string $basePath = '',
     ) {}
 
     public function record(object $event): void
@@ -124,6 +126,7 @@ class JobRuns
             return;
         }
 
+        $frame = $exception === null ? null : Fingerprint::frame($exception, $this->basePath);
         $finishedAt = microtime(true);
         $payload = $job->payload();
         $meta = $payload['yardmaster'] ?? [];
@@ -157,6 +160,10 @@ class JobRuns
             payload: $this->capturePayload($payload),
             exceptionClass: $exception === null ? null : $exception::class,
             exceptionMessage: $exception?->getMessage(),
+            exceptionFrame: $frame,
+            fingerprint: $exception === null
+                ? null
+                : Fingerprint::for($exception::class, $exception->getMessage(), $frame),
             sampleRate: $rate,
         ));
 

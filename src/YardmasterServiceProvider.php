@@ -8,6 +8,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\Queue;
 use Illuminate\Support\Facades\Route;
 use Iocod\Yardmaster\Actions\AuditLog;
+use Iocod\Yardmaster\Commands\CheckCommand;
 use Iocod\Yardmaster\Commands\RestartCommand;
 use Iocod\Yardmaster\Commands\TrimCommand;
 use Iocod\Yardmaster\Commands\WorkCommand;
@@ -31,9 +32,16 @@ class YardmasterServiceProvider extends PackageServiceProvider
                 'create_yard_runs_table',
                 'create_yard_buckets_table',
                 'create_yard_actions_table',
+                'create_yard_issues_table',
+                'create_yard_workers_table',
             ])
             ->hasViews('yardmaster')
-            ->hasCommands([TrimCommand::class, WorkCommand::class, RestartCommand::class]);
+            ->hasCommands([
+                TrimCommand::class,
+                WorkCommand::class,
+                RestartCommand::class,
+                CheckCommand::class,
+            ]);
     }
 
     protected function config(): Repository
@@ -165,7 +173,10 @@ class YardmasterServiceProvider extends PackageServiceProvider
                 continue;
             }
 
-            $recorder = $this->app->make($class, ['config' => $config]);
+            $recorder = $this->app->make($class, [
+                'config' => $config,
+                'basePath' => $this->app->basePath(),
+            ]);
 
             foreach ($recorder->listen ?? [] as $event) {
                 $events->listen($event, fn ($e) => $recorder->record($e));

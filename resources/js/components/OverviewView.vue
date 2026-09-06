@@ -24,6 +24,17 @@ function drainEstimate(queue) {
   return `${ms((pending / rate) * 60000)}`
 }
 
+async function toggle(queue) {
+  try {
+    queue.paused
+      ? await api.resume(queue.connection, queue.queue)
+      : await api.pause(queue.connection, queue.queue)
+    emit('refresh')
+  } catch (e) {
+    emit('error', e.message)
+  }
+}
+
 async function purge(queue) {
   if (!window.confirm(`Delete every job on ${queue.connection} / ${queue.queue}? This cannot be undone.`)) return
 
@@ -91,7 +102,10 @@ async function purge(queue) {
         <tbody>
           <tr v-for="q in queues" :key="`${q.connection}:${q.queue}`">
             <td>{{ q.connection }}</td>
-            <td><strong>{{ q.queue }}</strong></td>
+            <td>
+              <strong>{{ q.queue }}</strong>
+              <span v-if="q.paused" class="pill released" style="margin-left: 6px">paused</span>
+            </td>
             <td class="mono" style="color: var(--muted)">{{ q.driver }}</td>
             <td class="num" :class="{ approx: q.approximate }">
               <span v-if="q.pending !== null">{{ count(q.pending, q.approximate) }}</span>
@@ -112,6 +126,14 @@ async function purge(queue) {
                 :requires-manage="false" label="Inspect"
                 @click="emit('inspect', q)"
               />
+              <button
+                class="btn" style="margin-left: 6px"
+                :disabled="meta?.can?.manage !== true"
+                :title="meta?.can?.manage === true
+                  ? (q.paused ? 'Let workers pick up jobs again' : 'Stop workers picking up new jobs')
+                  : 'You do not have permission to change queue state.'"
+                @click="toggle(q)"
+              >{{ q.paused ? 'Resume' : 'Pause' }}</button>
               <GatedControl
                 :meta="meta" :connection="q.connection" capability="purge_queue"
                 :cooldown="q.purge_cooldown" label="Purge" danger

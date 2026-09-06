@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { api, basePath } from './api.js'
 import AuditView from './components/AuditView.vue'
+import IssuesView from './components/IssuesView.vue'
+import WorkersView from './components/WorkersView.vue'
 import OverviewView from './components/OverviewView.vue'
 import PeekDrawer from './components/PeekDrawer.vue'
 import RunDrawer from './components/RunDrawer.vue'
@@ -9,8 +11,10 @@ import RunsView from './components/RunsView.vue'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'issues', label: 'Issues' },
   { id: 'runs', label: 'Runs' },
   { id: 'failures', label: 'Failures' },
+  { id: 'workers', label: 'Workers' },
   { id: 'audit', label: 'Audit' },
 ]
 
@@ -168,6 +172,10 @@ onUnmounted(() => {
       :options="options" :failed-only="true"
       @open="openRun = $event" @error="error = $event"
     />
+
+    <IssuesView v-else-if="tab === 'issues'" @error="error = $event" />
+
+    <WorkersView v-else-if="tab === 'workers'" @error="error = $event" />
 
     <AuditView v-else-if="tab === 'audit'" @error="error = $event" />
 

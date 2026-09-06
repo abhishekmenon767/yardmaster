@@ -119,6 +119,8 @@ abstract class TestCase extends Orchestra
             'create_yard_runs_table',
             'create_yard_buckets_table',
             'create_yard_actions_table',
+            'create_yard_issues_table',
+            'create_yard_workers_table',
         ] as $name) {
             $migration = require __DIR__."/../database/migrations/{$name}.php.stub";
             $migration->up();

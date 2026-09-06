@@ -51,6 +51,15 @@ export const api = {
   purge: (connection, queue) => request('POST', 'queues/purge', { body: { connection, queue } }),
   forgetJob: (connection, queue, id) => request('DELETE', 'queues/jobs', { body: { connection, queue, id } }),
   promote: (connection, queue, id) => request('POST', 'queues/jobs/promote', { body: { connection, queue, id } }),
+  issues: (query) => request('GET', 'issues', { query }),
+  workers: () => request('GET', 'workers'),
+
+  pause: (connection, queue, ttl = 0) => request('POST', 'queues/pause', { body: { connection, queue, ttl } }),
+  resume: (connection, queue) => request('POST', 'queues/resume', { body: { connection, queue } }),
+  retryIssue: (fingerprint) => request('POST', `issues/${encodeURIComponent(fingerprint)}/retry`),
+  setIssueStatus: (fingerprint, status) =>
+    request('POST', `issues/${encodeURIComponent(fingerprint)}/status`, { body: { status } }),
+
   retry: (uuids) => request('POST', 'failures/retry', { body: { uuids } }),
   forgetFailures: (uuids) => request('DELETE', 'failures', { body: { uuids } }),
 }

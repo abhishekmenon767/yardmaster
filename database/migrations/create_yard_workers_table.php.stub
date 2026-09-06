@@ -1,0 +1,60 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * The worker roster.
+ *
+ * Yardmaster observes workers rather than supervising them — Supervisor and
+ * systemd already do that job well, and taking it over would double the surface
+ * area for no gain. What is missing from those tools is the answer to "is
+ * anything actually consuming this queue right now", which is what this is for.
+ */
+return new class extends Migration
+{
+    public function getConnection(): ?string
+    {
+        return config('yardmaster.storage.connection');
+    }
+
+    public function up(): void
+    {
+        Schema::connection($this->getConnection())->create(
+            config('yardmaster.storage.workers_table', 'yard_workers'),
+            function (Blueprint $table) {
+                $table->id();
+
+                // host:pid — stable for the life of one worker process.
+                $table->string('name')->unique();
+                $table->string('host');
+                $table->unsignedInteger('pid');
+
+                $table->string('connection', 64);
+                $table->string('queues');
+                $table->string('status', 16)->default('idle');
+
+                $table->string('current_job')->nullable();
+                $table->double('current_job_started_at')->nullable();
+
+                $table->unsignedInteger('memory_kb')->nullable();
+                $table->unsignedBigInteger('processed')->default(0);
+                $table->unsignedBigInteger('failed')->default(0);
+
+                $table->double('started_at');
+                $table->double('last_seen');
+
+                $table->index('last_seen');
+                $table->index(['connection', 'last_seen']);
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::connection($this->getConnection())->dropIfExists(
+            config('yardmaster.storage.workers_table', 'yard_workers')
+        );
+    }
+};

@@ -3,6 +3,7 @@
 use Iocod\Yardmaster\Ingest\DatabaseIngest;
 use Iocod\Yardmaster\Ingest\RedisIngest;
 use Iocod\Yardmaster\Recorders\JobRuns;
+use Iocod\Yardmaster\Recorders\WorkerHeartbeat;
 
 return [
 
@@ -31,6 +32,8 @@ return [
         'runs_table' => 'yard_runs',
         'buckets_table' => 'yard_buckets',
         'actions_table' => 'yard_actions',
+        'issues_table' => 'yard_issues',
+        'workers_table' => 'yard_workers',
     ],
 
     /*
@@ -106,6 +109,17 @@ return [
             ],
             'capture_payloads' => env('YARDMASTER_CAPTURE_PAYLOADS', true),
         ],
+
+        WorkerHeartbeat::class => [
+            'enabled' => true,
+            // Seconds between heartbeats. The roster answers "is anything
+            // consuming this queue, and has it wedged" — a question that does
+            // not need sub-second accuracy, and would cost a query between
+            // every job to get it.
+            'interval' => (int) env('YARDMASTER_HEARTBEAT', 5),
+            // A worker unheard from for this long is presumed gone.
+            'stale_after' => (int) env('YARDMASTER_WORKER_STALE', 30),
+        ],
     ],
 
     /*
@@ -162,10 +176,54 @@ return [
     'retention' => [
         'runs' => env('YARDMASTER_RETAIN_RUNS', '48 hours'),
         'payloads' => env('YARDMASTER_RETAIN_PAYLOADS', '6 hours'),
+        // Workers killed outright never remove their own row. This bounds how
+        // long those linger, which matters for `--once` workers whose pid —
+        // and therefore whose row — changes on every invocation.
+        'workers' => env('YARDMASTER_RETAIN_WORKERS', '10 minutes'),
         'buckets' => [
             'minute' => '24 hours',
             'hour' => '30 days',
             'day' => '400 days',
+        ],
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
+    | Alerting
+    |---------------------------------------------------------------------------
+    | Two thresholds per rule, not one. A rule that fires and clears at the same
+    | number flaps, and an alerting system that cries wolf gets muted — after
+    | which it is worse than having none, because everyone believes it is
+    | watching. Schedule `yard:check` every minute.
+    |
+    | Metrics: backlog | oldest_job_age | failure_rate | p95_runtime
+    */
+
+    'alerts' => [
+        'enabled' => env('YARDMASTER_ALERTS', false),
+
+        'notify' => [
+            'mail' => env('YARDMASTER_ALERT_MAIL'),
+        ],
+
+        'rules' => [
+            // [
+            //     'name' => 'Default queue backing up',
+            //     'connection' => 'redis',
+            //     'queue' => 'default',
+            //     'metric' => 'backlog',
+            //     'above' => 5000,
+            //     'recovers_below' => 1000,  // defaults to 80% of 'above'
+            //     'for' => 3,                // consecutive checks before firing
+            //     'cooldown' => 900,         // quiet period once it has spoken
+            // ],
+            // [
+            //     'name' => 'Jobs failing',
+            //     'metric' => 'failure_rate',
+            //     'above' => 0.05,
+            //     'window' => 300,
+            //     'for' => 2,
+            // ],
         ],
     ],
 

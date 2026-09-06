@@ -6,9 +6,8 @@ Horizon is excellent and requires Redis. Pulse works everywhere and is read-only
 Yardmaster is aimed at the gap between them: record every job on every
 connection, and expose exactly the operations each driver can actually perform.
 
-> **Status: phase 4 of 6 — scale and hardening.** Recording, control, the API,
-> the dashboard, Redis stream ingest, sampling, Octane and serverless modes all
-> work end to end. Failure clustering, alerting and the worker fleet are next.
+> **Status: phase 5 of 6 — an operations console.** Everything below works end
+> to end. Documentation, the CI matrix and the 1.0 release are what remain.
 
 ## What works today
 
@@ -123,6 +122,79 @@ DELETE /yardmaster/api/v1/failures             }
 Live updates use server-sent events — one long-lived read connection, no Reverb
 and no websocket server to run first. Append `?live=0` where a proxy buffers
 `text/event-stream` into uselessness; the dashboard falls back to polling.
+
+## Issues, not rows
+
+A bad deploy produces thousands of near-identical failed jobs. Rendering that as
+thousands of rows is accurate and useless. Yardmaster groups failures by
+exception class, message with the varying parts normalised out, and the first
+application stack frame:
+
+```
+6x  RuntimeException  could not reach the billing provider for welcome-email
+    …/app/Jobs/ChargeCustomer.php:24                      first seen 27s ago
+```
+
+The frame matters: the same exception thrown from two places is two different
+problems, and merging them would hide one of them. `Order 4471 failed` and
+`Order 8823 failed` are one problem, and are merged.
+
+Retry the whole cluster in one decision. **Ignore** an expected failure so it
+stops appearing; **resolve** one you have fixed — and if it happens again it
+reopens itself, because declaring something fixed does not make it so. An
+ignored issue stays ignored, since that was a decision about noise rather than a
+claim of a fix.
+
+## Alerting that does not cry wolf
+
+```php
+'rules' => [
+    [
+        'name' => 'Default queue backing up',
+        'connection' => 'redis', 'queue' => 'default',
+        'metric' => 'backlog',
+        'above' => 5000,
+        'recovers_below' => 1000,
+        'for' => 3,
+        'cooldown' => 900,
+    ],
+],
+```
+
+```php
+Schedule::command('yard:check')->everyMinute();
+```
+
+Four deliberate constraints, because an alerting system people mute is worse
+than none — everyone still believes it is watching:
+
+- **Two thresholds.** A rule that fires and clears at the same number flaps.
+- **Consecutive breaches** before firing, so a momentary spike is not an
+  incident.
+- **A cooldown** once it has spoken, however bad it stays.
+- **Silence where it cannot know.** A metric the driver cannot answer is skipped,
+  not read as zero, and a failure rate over no jobs is undefined rather than
+  healthy — otherwise every quiet night pages someone.
+
+Metrics: `backlog`, `oldest_job_age`, `failure_rate`, `p95_runtime`. Every alert
+also fires an `AlertFired` / `AlertRecovered` event, so you can route it anywhere
+without Yardmaster knowing how.
+
+## Workers and pause
+
+The **Workers** tab shows what is actually consuming your queues: host, pid,
+queues, current job and how long it has been on it, memory, uptime. A worker
+that stops heartbeating is shown as **stale** rather than dropped — silence is
+the symptom worth seeing, and a worker wedged mid-job goes quiet while still
+claiming to be working.
+
+Yardmaster observes workers rather than supervising them. Supervisor and systemd
+already do that job well; taking it over would double the surface area for no
+gain.
+
+**Pause and resume** work on every driver, because the framework owns them: the
+worker checks a cache key before reserving, whatever it is reserving from.
+Yardmaster wraps that and audits it rather than reimplementing it.
 
 ## Cost
 
@@ -292,8 +364,8 @@ abstraction has leaked.
 | 2 | Driver adapters and the capability gate | **done** (database, redis, sqs) |
 | 3 | JSON API and dashboard | **done** |
 | 4 | Redis stream ingest, sampling, Octane, serverless | **done** |
-| 5 | Failure clustering, alerting, worker fleet | next |
-| 6 | Docs, CI matrix, PHPStan level 9, 1.0 | |
+| 5 | Failure clustering, alerting, worker fleet | **done** |
+| 6 | Docs, CI matrix, PHPStan level 9, 1.0 | next |
 
 Static analysis currently passes at **level 8**. Level 9 needs typed config
 accessors throughout and is tracked for phase 6.

@@ -45,6 +45,16 @@ class TrimCommand extends Command
             $stalePayloads->update(['payload' => null]);
         }
 
+        $workers = $connection->table(config('yardmaster.storage.workers_table', 'yard_workers'))
+            ->where('last_seen', '<', microtime(true) - $this->seconds(
+                config('yardmaster.retention.workers', '10 minutes')
+            ));
+        $this->report('dead workers', $workers->count(), $dry);
+        if (! $dry) {
+            // A killed process never gets to remove its own row.
+            $workers->delete();
+        }
+
         foreach (Period::cases() as $period) {
             $retention = config("yardmaster.retention.buckets.{$period->value}");
 
@@ -69,6 +79,11 @@ class TrimCommand extends Command
     protected function cutoff(string $interval): int
     {
         return (int) strtotime('-'.ltrim($interval, '-'));
+    }
+
+    protected function seconds(mixed $interval): int
+    {
+        return max(60, time() - $this->cutoff(is_string($interval) ? $interval : '10 minutes'));
     }
 
     protected function report(string $label, int $count, bool $dry): void

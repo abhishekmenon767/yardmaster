@@ -9,6 +9,7 @@ use Iocod\Yardmaster\Contracts\Ingest;
 use Iocod\Yardmaster\Entries\RunEntry;
 use Iocod\Yardmaster\Enums\Period;
 use Iocod\Yardmaster\Support\BucketDelta;
+use Iocod\Yardmaster\Support\Fingerprint;
 use Iocod\Yardmaster\Support\Histogram;
 
 /**
@@ -34,6 +35,89 @@ class DatabaseIngest implements Ingest
 
         $this->writeRuns($entries);
         $this->writeBuckets($entries);
+        $this->writeIssues($entries);
+    }
+
+    /**
+     * Fold failures into the issues they are occurrences of.
+     *
+     * @param  array<int, RunEntry>  $entries
+     */
+    protected function writeIssues(array $entries): void
+    {
+        $groups = [];
+
+        foreach ($entries as $entry) {
+            if ($entry->fingerprint === null || ! $entry->status->isFailure()) {
+                continue;
+            }
+
+            $groups[$entry->fingerprint] ??= ['count' => 0, 'entry' => $entry, 'first' => $entry->startedAt, 'last' => $entry->startedAt];
+            $groups[$entry->fingerprint]['count']++;
+            $groups[$entry->fingerprint]['first'] = min($groups[$entry->fingerprint]['first'], $entry->startedAt);
+            $groups[$entry->fingerprint]['last'] = max($groups[$entry->fingerprint]['last'], $entry->startedAt);
+        }
+
+        foreach ($groups as $fingerprint => $group) {
+            $this->applyIssue((string) $fingerprint, $group['entry'], $group['count'], $group['first'], $group['last']);
+        }
+    }
+
+    protected function applyIssue(
+        string $fingerprint,
+        RunEntry $sample,
+        int $occurrences,
+        float $first,
+        float $last,
+    ): void {
+        $connection = $this->connection();
+        $table = $this->issuesTable();
+
+        $connection->transaction(function () use ($connection, $table, $fingerprint, $sample, $occurrences, $first, $last): void {
+            $existing = $connection->table($table)
+                ->where('fingerprint', $fingerprint)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing === null) {
+                $connection->table($table)->insert([
+                    'fingerprint' => $fingerprint,
+                    'exception_class' => $sample->exceptionClass ?? 'Unknown',
+                    'normalised_message' => Fingerprint::normalise($sample->exceptionMessage ?? ''),
+                    'sample_message' => $sample->exceptionMessage,
+                    'frame' => $sample->exceptionFrame,
+                    'job_class' => $sample->jobClass,
+                    'occurrences' => $occurrences,
+                    'first_seen' => $first,
+                    'last_seen' => $last,
+                    'status' => 'open',
+                    'sample_run_uuid' => $sample->uuid,
+                ]);
+
+                return;
+            }
+
+            $existing = (array) $existing;
+
+            $connection->table($table)->where('fingerprint', $fingerprint)->update([
+                'occurrences' => (int) $existing['occurrences'] + $occurrences,
+                'first_seen' => min((float) $existing['first_seen'], $first),
+                'last_seen' => max((float) $existing['last_seen'], $last),
+                // A resolved issue that happens again is not resolved. An
+                // ignored one stays ignored — that was a deliberate choice
+                // about noise, not a claim that it was fixed.
+                'status' => $existing['status'] === 'resolved' ? 'open' : $existing['status'],
+                'resolved_at' => $existing['status'] === 'resolved' ? null : $existing['resolved_at'],
+                'sample_run_uuid' => $sample->uuid,
+            ]);
+        });
+    }
+
+    protected function issuesTable(): string
+    {
+        $table = $this->config->get('yardmaster.storage.issues_table', 'yard_issues');
+
+        return is_string($table) ? $table : 'yard_issues';
     }
 
     /**

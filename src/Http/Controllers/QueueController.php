@@ -2,10 +2,13 @@
 
 namespace Iocod\Yardmaster\Http\Controllers;
 
+use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Queue\QueueManager;
 use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Drivers\Capability;
+use Iocod\Yardmaster\Events\ActionPerformed;
 use Iocod\Yardmaster\Repositories\MetricsRepository;
 
 /**
@@ -54,6 +57,7 @@ class QueueController extends Controller
                 $queues[] = $depth->toArray() + [
                     'driver' => $adapter->driver(),
                     'purge_cooldown' => $adapter->purgeCooldownRemaining((string) $queue),
+                    'paused' => $this->isPaused($name, (string) $queue),
                 ];
             }
         }
@@ -98,6 +102,69 @@ class QueueController extends Controller
         return $this->gated(fn () => [
             'promoted' => $adapters->for($connection)->promote($queue, (string) $request->input('id')),
         ]);
+    }
+
+    /**
+     * Pause and resume are the one pair of controls that work everywhere,
+     * because the framework itself owns them: the worker checks a cache key
+     * before reserving, whichever driver it is reserving from. Yardmaster
+     * wraps that and audits it rather than reimplementing it.
+     */
+    public function pause(Request $request, QueueFactory $queue): JsonResponse
+    {
+        [$connection, $name] = $this->target($request);
+        $ttl = (int) $request->input('ttl', 0);
+
+        return $this->gated(function () use ($queue, $connection, $name, $ttl) {
+            if (! $queue instanceof QueueManager) {
+                return ['paused' => false];
+            }
+
+            $ttl > 0
+                ? $queue->pauseFor($connection, $name, $ttl)
+                : $queue->pause($connection, $name);
+
+            event(new ActionPerformed(
+                action: 'pause_queue',
+                connectionName: $connection,
+                driver: 'queue',
+                queue: $name,
+                context: $ttl > 0 ? ['ttl' => $ttl] : [],
+                at: microtime(true),
+            ));
+
+            return ['paused' => true, 'ttl' => $ttl > 0 ? $ttl : null];
+        });
+    }
+
+    public function resume(Request $request, QueueFactory $queue): JsonResponse
+    {
+        [$connection, $name] = $this->target($request);
+
+        return $this->gated(function () use ($queue, $connection, $name) {
+            if (! $queue instanceof QueueManager) {
+                return ['paused' => false];
+            }
+
+            $queue->resume($connection, $name);
+
+            event(new ActionPerformed(
+                action: 'resume_queue',
+                connectionName: $connection,
+                driver: 'queue',
+                queue: $name,
+                at: microtime(true),
+            ));
+
+            return ['paused' => false];
+        });
+    }
+
+    protected function isPaused(string $connection, string $queue): bool
+    {
+        $manager = app(QueueFactory::class);
+
+        return $manager instanceof QueueManager && $manager->isPaused($connection, $queue);
     }
 
     /**

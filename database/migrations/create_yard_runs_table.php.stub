@@ -52,6 +52,12 @@ return new class extends Migration
 
                 $table->string('exception_class')->nullable();
                 $table->text('exception_message')->nullable();
+                $table->string('exception_frame')->nullable();
+
+                // Links an attempt to the issue it is an occurrence of, so the
+                // detail view can jump from "this job failed" to "this is the
+                // 40,112nd time it has".
+                $table->char('fingerprint', 32)->nullable();
 
                 // Every dashboard query is "recent activity, narrowed by one
                 // dimension", so every index leads with that dimension and
@@ -64,6 +70,7 @@ return new class extends Migration
                 $table->index('job_uuid');
                 $table->index('batch_id');
                 $table->index('parent_uuid');
+                $table->index(['fingerprint', 'started_at']);
             }
         );
     }
