@@ -5,6 +5,7 @@ namespace Iocod\Yardmaster\Http\Controllers;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Contracts\View\View;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Serves the single-page app shell.
@@ -19,7 +20,7 @@ class DashboardController extends Controller
         $assets = __DIR__.'/../../../dist/yardmaster.js';
 
         return $views->make('yardmaster::dashboard', [
-            'basePath' => '/'.trim((string) $config->get('yardmaster.dashboard.path', 'yardmaster'), '/'),
+            'basePath' => '/'.trim(Cast::string($config->get('yardmaster.dashboard.path', 'yardmaster')), '/'),
             // Cache-bust on the built asset itself, so an upgrade invalidates
             // the immutable cache headers without anyone remembering to.
             'version' => is_file($assets) ? (string) filemtime($assets) : 'dev',

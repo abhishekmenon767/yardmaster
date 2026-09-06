@@ -7,6 +7,7 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Drivers\Capability;
 use Iocod\Yardmaster\Repositories\MetricsRepository;
+use Iocod\Yardmaster\Support\Cast;
 use Throwable;
 
 /**
@@ -60,8 +61,8 @@ class AlertEvaluator
         $configured = $this->config->get('yardmaster.alerts.rules', []);
         $rules = [];
 
-        foreach (is_array($configured) ? $configured : [] as $rule) {
-            if (is_array($rule) && ($parsed = AlertRule::fromArray($rule)) !== null) {
+        foreach (Cast::array($configured) as $rule) {
+            if (is_array($rule) && ($parsed = AlertRule::fromArray(Cast::array($rule))) !== null) {
                 $rules[] = $parsed;
             }
         }
@@ -108,7 +109,7 @@ class AlertEvaluator
             return null;
         }
 
-        $breaches = $breaching ? (int) ($state['breaches'] ?? 0) + 1 : 0;
+        $breaches = $breaching ? Cast::int($state['breaches'] ?? 0) + 1 : 0;
 
         if (! $breaching || $breaches < $rule->for) {
             $this->cache->put($rule->key(), ['breaches' => $breaches, 'firing' => false, 'fired_at' => 0.0], 86400);
@@ -116,7 +117,7 @@ class AlertEvaluator
             return null;
         }
 
-        if ($rule->cooldown > 0 && $now - (float) ($state['fired_at'] ?? 0) < $rule->cooldown) {
+        if ($rule->cooldown > 0 && $now - Cast::float(($state['fired_at'] ?? 0) < $rule->cooldown)) {
             return null;
         }
 
@@ -182,8 +183,8 @@ class AlertEvaluator
         }
 
         return $rule->metric === 'failure_rate'
-            ? (float) $summary['failure_rate']
-            : (float) ($summary['runtime_ms']['p95'] ?? 0);
+            ? Cast::float($summary['failure_rate'])
+            : Cast::float(Cast::array($summary['runtime_ms'] ?? [])['p95'] ?? 0);
     }
 
     /**

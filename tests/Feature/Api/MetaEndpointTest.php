@@ -1,6 +1,7 @@
 <?php
 
 use Iocod\Yardmaster\Drivers\Capability;
+use Laravel\Horizon\Horizon;
 
 beforeEach(fn () => $this->grantDashboard());
 
@@ -44,4 +45,14 @@ it('marks destructive capabilities for the client', function () {
     $destructive = collect($meta['capabilities'])->where('destructive', true)->pluck('value')->all();
 
     expect($destructive)->toBe(['delete_by_id', 'promote_delayed', 'purge_queue']);
+});
+
+it('reports whether Horizon is installed rather than competing with it', function () {
+    $horizon = $this->getJson('yardmaster/api/v1/meta')->json('horizon');
+
+    // Horizon is excellent at what it does. Where it is present, Yardmaster
+    // links to it for the Redis connections it already owns rather than
+    // presenting a second, competing view of them.
+    expect($horizon)->toHaveKeys(['installed', 'path'])
+        ->and($horizon['installed'])->toBe(class_exists(Horizon::class));
 });

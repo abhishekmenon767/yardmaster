@@ -25,14 +25,38 @@ class EnsureTablesExist
         protected Config $config,
     ) {}
 
+    /**
+     * One column per table that the current schema is known to have.
+     *
+     * A table that exists but is behind is worse than one that is missing: jobs
+     * keep succeeding, every insert fails inside the rescue boundary, and the
+     * dashboard just goes quiet. This turns that into a sentence.
+     *
+     * @var array<string, string>
+     */
+    protected const CANARIES = [
+        'runs_table' => 'fingerprint',
+        'buckets_table' => 'sample_rate',
+        'actions_table' => 'action',
+        'issues_table' => 'fingerprint',
+        'workers_table' => 'last_seen',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
-        $missing = $this->missing();
+        [$missingTables, $staleTables] = $this->inspect();
 
-        if ($missing !== []) {
+        if ($missingTables !== []) {
             return new JsonResponse([
                 'message' => 'Yardmaster has not been migrated yet. Run: php artisan migrate',
-                'missing_tables' => $missing,
+                'missing_tables' => $missingTables,
+            ], 503);
+        }
+
+        if ($staleTables !== []) {
+            return new JsonResponse([
+                'message' => 'Yardmaster\'s schema is out of date. Run: php artisan migrate',
+                'stale_tables' => $staleTables,
             ], 503);
         }
 
@@ -40,9 +64,9 @@ class EnsureTablesExist
     }
 
     /**
-     * @return array<int, string>
+     * @return array{0: array<int, string>, 1: array<int, string>}
      */
-    protected function missing(): array
+    protected function inspect(): array
     {
         $name = $this->config->get('yardmaster.storage.connection');
 
@@ -51,20 +75,26 @@ class EnsureTablesExist
         } catch (Throwable) {
             // An unreachable database is a different problem with its own
             // error; do not mask it with a migration hint.
-            return [];
+            return [[], []];
         }
 
         $missing = [];
+        $stale = [];
 
-        foreach (['runs_table', 'buckets_table', 'actions_table'] as $key) {
+        foreach (self::CANARIES as $key => $column) {
             $table = $this->config->get("yardmaster.storage.{$key}");
-            $table = is_string($table) ? $table : null;
 
-            if ($table !== null && ! $schema->hasTable($table)) {
+            if (! is_string($table)) {
+                continue;
+            }
+
+            if (! $schema->hasTable($table)) {
                 $missing[] = $table;
+            } elseif (! $schema->hasColumn($table, $column)) {
+                $stale[] = $table;
             }
         }
 
-        return $missing;
+        return [$missing, $stale];
     }
 }

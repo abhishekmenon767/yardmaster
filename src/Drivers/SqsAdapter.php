@@ -6,6 +6,7 @@ use Aws\Sqs\SqsClient;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\SqsQueue;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Values\QueueDepth;
 use Throwable;
 
@@ -64,7 +65,7 @@ class SqsAdapter extends Adapter
         $urls = $result['QueueUrls'] ?? [];
 
         $names = array_map(
-            static fn ($url) => (string) substr(strrchr((string) $url, '/') ?: '/', 1),
+            static fn ($url) => Cast::string(substr(strrchr(Cast::string($url), '/') ?: '/', 1)),
             is_array($urls) ? $urls : [],
         );
 

@@ -8,6 +8,7 @@ use Iocod\Yardmaster\Concerns\CallsRedis;
 use Iocod\Yardmaster\Contracts\Drainable;
 use Iocod\Yardmaster\Contracts\Ingest;
 use Iocod\Yardmaster\Entries\RunEntry;
+use Iocod\Yardmaster\Support\Cast;
 use Throwable;
 
 /**
@@ -64,7 +65,7 @@ class RedisIngest implements Drainable, Ingest
 
     public function pending(): int
     {
-        return (int) $this->call('xlen', [$this->stream()]);
+        return Cast::int($this->call('xlen', [$this->stream()]));
     }
 
     public function read(int $limit): array
@@ -118,7 +119,7 @@ class RedisIngest implements Drainable, Ingest
             }
 
             try {
-                $entries[] = RunEntry::fromArray($row);
+                $entries[] = RunEntry::fromArray(Cast::array($row));
             } catch (Throwable) {
                 // A batch written by an older version of the package may not
                 // decode. Skip the row rather than stalling the drain.
@@ -137,7 +138,7 @@ class RedisIngest implements Drainable, Ingest
 
     protected function trim(): int
     {
-        return max(1000, (int) ($this->settings['trim'] ?? 10000));
+        return max(1000, Cast::int($this->settings['trim'] ?? 10000));
     }
 
     /**
@@ -145,7 +146,7 @@ class RedisIngest implements Drainable, Ingest
      */
     protected function chunk(): int
     {
-        return max(1, (int) ($this->settings['chunk'] ?? 250));
+        return max(1, Cast::int($this->settings['chunk'] ?? 250));
     }
 
     protected function redis(): Connection

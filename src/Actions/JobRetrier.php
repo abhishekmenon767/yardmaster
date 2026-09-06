@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Queue\Failed\FailedJobProviderInterface;
 use Illuminate\Support\Str;
 use Iocod\Yardmaster\Events\ActionPerformed;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Retries failed jobs on any driver.
@@ -36,8 +37,8 @@ class JobRetrier
         }
 
         $payload = $this->rehydrate($job, $uuid);
-        $connection = (string) data_get($job, 'connection');
-        $queue = (string) data_get($job, 'queue');
+        $connection = Cast::string(data_get($job, 'connection'));
+        $queue = Cast::string(data_get($job, 'queue'));
 
         $this->queue->connection($connection)->pushRaw($payload, $queue);
 
@@ -84,9 +85,9 @@ class JobRetrier
 
         $this->events->dispatch(new ActionPerformed(
             action: 'forget_failed',
-            connectionName: (string) data_get($job, 'connection'),
+            connectionName: Cast::string(data_get($job, 'connection')),
             driver: 'failed',
-            queue: (string) data_get($job, 'queue'),
+            queue: Cast::string(data_get($job, 'queue')),
             target: $uuid,
             at: microtime(true),
         ));
@@ -104,16 +105,16 @@ class JobRetrier
      */
     protected function rehydrate(mixed $job, string $uuid): string
     {
-        $payload = json_decode((string) data_get($job, 'payload'), true);
+        $payload = json_decode(Cast::string(data_get($job, 'payload')), true);
 
         if (! is_array($payload)) {
-            return (string) data_get($job, 'payload');
+            return Cast::string(data_get($job, 'payload'));
         }
 
         $payload['uuid'] = (string) Str::uuid();
         $payload['attempts'] = 0;
         $payload['retry_of'] = $uuid;
 
-        return json_encode($payload) ?: (string) data_get($job, 'payload');
+        return json_encode($payload) ?: Cast::string(data_get($job, 'payload'));
     }
 }

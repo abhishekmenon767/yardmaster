@@ -2,6 +2,8 @@
 
 namespace Iocod\Yardmaster\Alerts;
 
+use Iocod\Yardmaster\Support\Cast;
+
 /**
  * One thing worth being woken up for.
  *
@@ -31,7 +33,7 @@ final class AlertRule
     ) {}
 
     /**
-     * @param  array<string, mixed>  $rule
+     * @param  array<array-key, mixed>  $rule
      */
     public static function fromArray(array $rule): ?self
     {
@@ -46,15 +48,15 @@ final class AlertRule
         }
 
         return new self(
-            name: (string) ($rule['name'] ?? $metric),
+            name: Cast::string($rule['name'] ?? $metric),
             metric: $metric,
             above: (float) $rule['above'],
             connection: is_string($rule['connection'] ?? null) ? $rule['connection'] : null,
             queue: is_string($rule['queue'] ?? null) ? $rule['queue'] : null,
             recoversBelow: is_numeric($rule['recovers_below'] ?? null) ? (float) $rule['recovers_below'] : null,
-            for: max(1, (int) ($rule['for'] ?? 1)),
-            cooldown: max(0, (int) ($rule['cooldown'] ?? 900)),
-            window: max(60, (int) ($rule['window'] ?? 300)),
+            for: max(1, Cast::int($rule['for'] ?? 1)),
+            cooldown: max(0, Cast::int($rule['cooldown'] ?? 900)),
+            window: max(60, Cast::int($rule['window'] ?? 300)),
         );
     }
 

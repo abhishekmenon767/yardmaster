@@ -8,6 +8,7 @@ use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Iocod\Yardmaster\Events\ActionPerformed;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Writes the audit trail.
@@ -69,7 +70,7 @@ class AuditLog
         }
 
         return [
-            'id' => ($id = $user->getAuthIdentifier()) === null ? null : (string) $id,
+            'id' => ($id = $user->getAuthIdentifier()) === null ? null : Cast::string($id),
             'name' => $name,
         ];
     }

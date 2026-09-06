@@ -3,6 +3,7 @@
 namespace Iocod\Yardmaster\Entries;
 
 use Iocod\Yardmaster\Enums\RunStatus;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * One attempt at one job, on any driver.
@@ -81,33 +82,33 @@ final class RunEntry
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param  array<array-key, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
         return new self(
-            uuid: (string) ($data['uuid'] ?? ''),
-            jobUuid: isset($data['job_uuid']) ? (string) $data['job_uuid'] : null,
-            jobClass: (string) ($data['job_class'] ?? 'unknown'),
-            connection: (string) ($data['connection'] ?? ''),
-            queue: (string) ($data['queue'] ?? 'default'),
-            attempt: (int) ($data['attempt'] ?? 1),
-            status: RunStatus::from((string) ($data['status'] ?? 'processed')),
-            queuedAt: isset($data['queued_at']) ? (float) $data['queued_at'] : null,
-            startedAt: (float) ($data['started_at'] ?? 0),
-            finishedAt: isset($data['finished_at']) ? (float) $data['finished_at'] : null,
-            waitMs: isset($data['wait_ms']) ? (float) $data['wait_ms'] : null,
-            runtimeMs: isset($data['runtime_ms']) ? (float) $data['runtime_ms'] : null,
-            peakMemoryKb: isset($data['peak_memory_kb']) ? (int) $data['peak_memory_kb'] : null,
-            batchId: isset($data['batch_id']) ? (string) $data['batch_id'] : null,
-            parentUuid: isset($data['parent_uuid']) ? (string) $data['parent_uuid'] : null,
+            uuid: Cast::string($data['uuid'] ?? ''),
+            jobUuid: isset($data['job_uuid']) ? Cast::string($data['job_uuid']) : null,
+            jobClass: Cast::string($data['job_class'] ?? 'unknown'),
+            connection: Cast::string($data['connection'] ?? ''),
+            queue: Cast::string($data['queue'] ?? 'default'),
+            attempt: Cast::int($data['attempt'] ?? 1),
+            status: RunStatus::from(Cast::string($data['status'] ?? 'processed')),
+            queuedAt: isset($data['queued_at']) ? Cast::float($data['queued_at']) : null,
+            startedAt: Cast::float($data['started_at'] ?? 0),
+            finishedAt: isset($data['finished_at']) ? Cast::float($data['finished_at']) : null,
+            waitMs: isset($data['wait_ms']) ? Cast::float($data['wait_ms']) : null,
+            runtimeMs: isset($data['runtime_ms']) ? Cast::float($data['runtime_ms']) : null,
+            peakMemoryKb: isset($data['peak_memory_kb']) ? Cast::int($data['peak_memory_kb']) : null,
+            batchId: isset($data['batch_id']) ? Cast::string($data['batch_id']) : null,
+            parentUuid: isset($data['parent_uuid']) ? Cast::string($data['parent_uuid']) : null,
             tags: is_array($data['tags'] ?? null) ? array_values(array_filter($data['tags'], 'is_string')) : [],
             payload: is_array($data['payload'] ?? null) ? $data['payload'] : null,
-            exceptionClass: isset($data['exception_class']) ? (string) $data['exception_class'] : null,
-            exceptionMessage: isset($data['exception_message']) ? (string) $data['exception_message'] : null,
-            exceptionFrame: isset($data['exception_frame']) ? (string) $data['exception_frame'] : null,
-            fingerprint: isset($data['fingerprint']) ? (string) $data['fingerprint'] : null,
-            sampleRate: (float) ($data['sample_rate'] ?? 1.0),
+            exceptionClass: isset($data['exception_class']) ? Cast::string($data['exception_class']) : null,
+            exceptionMessage: isset($data['exception_message']) ? Cast::string($data['exception_message']) : null,
+            exceptionFrame: isset($data['exception_frame']) ? Cast::string($data['exception_frame']) : null,
+            fingerprint: isset($data['fingerprint']) ? Cast::string($data['fingerprint']) : null,
+            sampleRate: Cast::float($data['sample_rate'] ?? 1.0),
         );
     }
 

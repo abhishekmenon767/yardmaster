@@ -6,6 +6,7 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
 use Iocod\Yardmaster\Recorders\WorkerHeartbeat;
+use Iocod\Yardmaster\Support\Cast;
 
 class WorkerRepository
 {
@@ -19,10 +20,10 @@ class WorkerRepository
      */
     public function all(): array
     {
-        $staleAfter = (int) $this->config->get(
+        $staleAfter = Cast::int($this->config->get(
             'yardmaster.recorders.'.WorkerHeartbeat::class.'.stale_after',
             30
-        );
+        ), 30);
 
         $now = microtime(true);
 

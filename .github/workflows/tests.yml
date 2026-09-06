@@ -66,3 +66,23 @@ jobs:
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: vendor/bin/pint --test
       - run: vendor/bin/phpstan analyse --no-progress
+
+  assets:
+    runs-on: ubuntu-latest
+    name: dashboard bundle is current
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build
+      # dist/ is committed so applications need no npm step. This fails the
+      # build if it has drifted from the source it was compiled from.
+      - name: Fail if dist/ is stale
+        run: |
+          if ! git diff --quiet -- dist; then
+            echo "dist/ is out of date — run 'npm run build' and commit the result."
+            git --no-pager diff --stat -- dist
+            exit 1
+          fi

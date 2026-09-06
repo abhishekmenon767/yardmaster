@@ -7,6 +7,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Values\PendingJob;
 use Iocod\Yardmaster\Values\QueueDepth;
 
@@ -59,7 +60,7 @@ class DatabaseAdapter extends Adapter
             ->distinct()
             ->orderBy('queue')
             ->pluck('queue')
-            ->map(static fn ($queue) => (string) $queue)
+            ->map(static fn ($queue) => Cast::string($queue))
             ->all();
     }
 
@@ -93,7 +94,7 @@ class DatabaseAdapter extends Adapter
             ->where('available_at', '<=', $now)
             ->min('available_at');
 
-        return $availableAt === null ? null : max(0, $now - (int) $availableAt);
+        return $availableAt === null ? null : max(0, $now - Cast::int($availableAt));
     }
 
     protected function performPeek(string $queue, int $limit): array

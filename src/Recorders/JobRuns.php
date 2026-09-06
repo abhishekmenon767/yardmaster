@@ -13,6 +13,7 @@ use Illuminate\Queue\Events\WorkerStopping;
 use Illuminate\Support\Str;
 use Iocod\Yardmaster\Entries\RunEntry;
 use Iocod\Yardmaster\Enums\RunStatus;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Support\Fingerprint;
 use Iocod\Yardmaster\Support\Redactor;
 use Iocod\Yardmaster\Yardmaster;
@@ -183,7 +184,9 @@ class JobRuns
 
         // The serialized command is opaque, frequently enormous, and is the
         // single most likely place for credentials to be sitting.
-        unset($payload['data']['command'], $payload['yardmaster']);
+        $data = Cast::array($payload['data'] ?? []);
+        unset($data['command'], $payload['yardmaster']);
+        $payload['data'] = $data;
 
         return $this->redactor->scrub($payload);
     }
@@ -209,16 +212,19 @@ class JobRuns
      */
     protected function jobClass(Job $job, array $payload): string
     {
-        return $payload['data']['commandName']
-            ?? $payload['displayName']
-            ?? $job->resolveName();
+        $data = Cast::array($payload['data'] ?? []);
+
+        return Cast::string(
+            $data['commandName'] ?? $payload['displayName'] ?? null,
+            $job->resolveName(),
+        );
     }
 
     protected function shouldIgnore(Job $job): bool
     {
         $name = $job->resolveName();
 
-        foreach ((array) ($this->config['ignore'] ?? []) as $pattern) {
+        foreach (Cast::strings($this->config['ignore'] ?? []) as $pattern) {
             if (@preg_match($pattern, $name) === 1) {
                 return true;
             }
@@ -229,7 +235,7 @@ class JobRuns
 
     protected function sampleRate(): float
     {
-        $rate = (float) ($this->config['sample'] ?? 1.0);
+        $rate = Cast::float($this->config['sample'] ?? 1.0);
 
         return max(0.0, min(1.0, $rate));
     }

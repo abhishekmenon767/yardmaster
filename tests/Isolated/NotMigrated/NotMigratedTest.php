@@ -22,3 +22,18 @@ it('still serves the shell so the dashboard can render that message', function (
 it('stays out of the way once the tables are there', function () {
     $this->getJson('yardmaster/api/v1/queues')->assertOk();
 });
+
+it('says the schema is out of date when a table is behind the code', function () {
+    Schema::table('yard_runs', function ($table) {
+        $table->dropIndex(['fingerprint', 'started_at']);
+        $table->dropColumn('fingerprint');
+    });
+
+    $response = $this->getJson('yardmaster/api/v1/queues')->assertStatus(503);
+
+    // A table that exists but is behind is worse than one that is missing:
+    // jobs keep succeeding while every insert fails inside the rescue boundary,
+    // and the dashboard simply goes quiet.
+    expect($response->json('message'))->toBe("Yardmaster's schema is out of date. Run: php artisan migrate")
+        ->and($response->json('stale_tables'))->toBe(['yard_runs']);
+});

@@ -5,6 +5,7 @@ namespace Iocod\Yardmaster\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
 use Iocod\Yardmaster\Enums\Period;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Enforces retention.
@@ -21,13 +22,15 @@ class TrimCommand extends Command
 
     public function handle(DatabaseManager $db): int
     {
-        $connection = $db->connection(config('yardmaster.storage.connection'));
-        $runs = config('yardmaster.storage.runs_table', 'yard_runs');
-        $buckets = config('yardmaster.storage.buckets_table', 'yard_buckets');
+        $name = config('yardmaster.storage.connection');
+        $connection = $db->connection(is_string($name) ? $name : null);
+
+        $runs = Cast::string(config('yardmaster.storage.runs_table'), 'yard_runs');
+        $buckets = Cast::string(config('yardmaster.storage.buckets_table'), 'yard_buckets');
         $dry = (bool) $this->option('dry-run');
 
-        $runsBefore = $this->cutoff(config('yardmaster.retention.runs', '48 hours'));
-        $payloadsBefore = $this->cutoff(config('yardmaster.retention.payloads', '6 hours'));
+        $runsBefore = $this->cutoff(Cast::string(config('yardmaster.retention.runs'), '48 hours'));
+        $payloadsBefore = $this->cutoff(Cast::string(config('yardmaster.retention.payloads'), '6 hours'));
 
         $expiredRuns = $connection->table($runs)->where('started_at', '<', $runsBefore);
         $this->report('runs', $expiredRuns->count(), $dry);
@@ -45,7 +48,7 @@ class TrimCommand extends Command
             $stalePayloads->update(['payload' => null]);
         }
 
-        $workers = $connection->table(config('yardmaster.storage.workers_table', 'yard_workers'))
+        $workers = $connection->table(Cast::string(config('yardmaster.storage.workers_table'), 'yard_workers'))
             ->where('last_seen', '<', microtime(true) - $this->seconds(
                 config('yardmaster.retention.workers', '10 minutes')
             ));
@@ -56,9 +59,9 @@ class TrimCommand extends Command
         }
 
         foreach (Period::cases() as $period) {
-            $retention = config("yardmaster.retention.buckets.{$period->value}");
+            $retention = Cast::string(config("yardmaster.retention.buckets.{$period->value}"));
 
-            if (! $retention) {
+            if ($retention === '') {
                 continue;
             }
 

@@ -51,7 +51,12 @@
     "scripts": {
         "test": "pest",
         "lint": "pint",
-        "analyse": "phpstan analyse"
+        "analyse": "phpstan analyse",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ]
     },
     "config": {
         "sort-packages": true,
@@ -60,5 +65,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "abhishekiocod",
+            "email": "abhishek@iocod.com"
+        }
+    ]
 }

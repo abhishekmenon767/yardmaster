@@ -7,6 +7,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Redis\Connections\Connection;
 use Iocod\Yardmaster\Concerns\CallsRedis;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Values\PendingJob;
 use Iocod\Yardmaster\Values\QueueDepth;
 
@@ -86,13 +87,13 @@ class RedisAdapter extends Adapter
             [$cursor, $keys] = $result;
 
             foreach ((array) $keys as $key) {
-                $name = $this->queueNameFromKey((string) $key);
+                $name = $this->queueNameFromKey(Cast::string($key));
 
                 if ($name !== null) {
                     $found[$name] = true;
                 }
             }
-        } while ((int) $cursor !== 0);
+        } while (Cast::int($cursor) !== 0);
 
         $names = array_keys($found);
         sort($names);
@@ -167,7 +168,7 @@ class RedisAdapter extends Adapter
     protected function performForget(string $queue, string $id): bool
     {
         if (($member = $this->findInList($this->key($queue), $id)) !== null) {
-            return (int) $this->call('lrem', [$this->key($queue), 1, $member]) > 0;
+            return Cast::int($this->call('lrem', [$this->key($queue), 1, $member])) > 0;
         }
 
         $delayed = $this->key($queue, ':delayed');
@@ -268,11 +269,9 @@ class RedisAdapter extends Adapter
      */
     protected function pushedAt(array $payload): ?float
     {
-        if (is_numeric($payload['yardmaster']['pushed_at'] ?? null)) {
-            return (float) $payload['yardmaster']['pushed_at'];
-        }
+        $meta = Cast::array($payload['yardmaster'] ?? []);
 
-        return is_numeric($payload['createdAt'] ?? null) ? (float) $payload['createdAt'] : null;
+        return Cast::nullableFloat($meta['pushed_at'] ?? $payload['createdAt'] ?? null);
     }
 
     protected function queueNameFromKey(string $key): ?string

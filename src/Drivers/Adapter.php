@@ -6,6 +6,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
 use Iocod\Yardmaster\Events\ActionPerformed;
 use Iocod\Yardmaster\Exceptions\UnsupportedCapability;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Values\PendingJob;
 use Iocod\Yardmaster\Values\QueueDepth;
 
@@ -155,7 +156,7 @@ abstract class Adapter implements QueueDriverAdapter
      */
     protected function depthCacheSeconds(): int
     {
-        return (int) ($this->config['yardmaster_depth_cache'] ?? 0);
+        return Cast::int($this->config['yardmaster_depth_cache'] ?? 0);
     }
 
     protected function purgeCooldownSeconds(): int

@@ -9,6 +9,7 @@ use Iocod\Yardmaster\Contracts\Ingest;
 use Iocod\Yardmaster\Entries\RunEntry;
 use Iocod\Yardmaster\Enums\Period;
 use Iocod\Yardmaster\Support\BucketDelta;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Support\Fingerprint;
 use Iocod\Yardmaster\Support\Histogram;
 
@@ -276,16 +277,18 @@ class DatabaseIngest implements Ingest
 
     protected function connection(): ConnectionInterface
     {
-        return $this->db->connection($this->config->get('yardmaster.storage.connection'));
+        $name = $this->config->get('yardmaster.storage.connection');
+
+        return $this->db->connection(is_string($name) ? $name : null);
     }
 
     protected function runsTable(): string
     {
-        return $this->config->get('yardmaster.storage.runs_table', 'yard_runs');
+        return Cast::string($this->config->get('yardmaster.storage.runs_table'), 'yard_runs');
     }
 
     protected function bucketsTable(): string
     {
-        return $this->config->get('yardmaster.storage.buckets_table', 'yard_buckets');
+        return Cast::string($this->config->get('yardmaster.storage.buckets_table'), 'yard_buckets');
     }
 }

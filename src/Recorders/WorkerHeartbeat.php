@@ -11,6 +11,7 @@ use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\Looping;
 use Illuminate\Queue\Events\WorkerStarting;
 use Illuminate\Queue\Events\WorkerStopping;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Yardmaster;
 
 /**
@@ -151,7 +152,7 @@ class WorkerHeartbeat
 
     protected function interval(): float
     {
-        return max(1.0, (float) ($this->config['interval'] ?? 5));
+        return max(1.0, Cast::float($this->config['interval'] ?? 5));
     }
 
     protected function name(): string

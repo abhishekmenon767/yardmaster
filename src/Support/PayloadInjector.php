@@ -19,7 +19,7 @@ use ReflectionObject;
 class PayloadInjector
 {
     /**
-     * @param  array<string, mixed>  $config
+     * @param  array<array-key, mixed>  $config
      */
     public function __construct(
         protected Yardmaster $yardmaster,
@@ -32,8 +32,8 @@ class PayloadInjector
      */
     public function __invoke(string $connection, ?string $queue, array $payload): array
     {
-        return $this->yardmaster->rescue(function () use ($payload) {
-            $job = $payload['data']['command'] ?? null;
+        $injected = $this->yardmaster->rescue(function () use ($payload) {
+            $job = Cast::array($payload['data'] ?? [])['command'] ?? null;
 
             return [
                 'yardmaster' => array_filter([
@@ -48,7 +48,9 @@ class PayloadInjector
                     'tags' => is_object($job) ? $this->tags($job) : [],
                 ], static fn ($value) => $value !== null && $value !== []),
             ];
-        }) ?? [];
+        });
+
+        return Cast::array($injected);
     }
 
     /**
@@ -86,7 +88,7 @@ class PayloadInjector
 
             foreach (is_iterable($value) ? $value : [$value] as $item) {
                 if ($item instanceof Model && $item->getKey() !== null) {
-                    $tags[] = $item::class.':'.$item->getKey();
+                    $tags[] = $item::class.':'.Cast::string($item->getKey());
                 }
             }
         }

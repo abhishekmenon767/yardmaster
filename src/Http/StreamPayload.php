@@ -5,6 +5,7 @@ namespace Iocod\Yardmaster\Http;
 use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Drivers\Capability;
 use Iocod\Yardmaster\Repositories\MetricsRepository;
+use Iocod\Yardmaster\Support\Cast;
 use Throwable;
 
 /**
@@ -50,7 +51,7 @@ class StreamPayload
                 'failed' => $summary['failed'],
                 'failure_rate' => $summary['failure_rate'],
                 'throughput_per_minute' => $summary['throughput_per_minute'],
-                'p95_ms' => $summary['runtime_ms']['p95'],
+                'p95_ms' => Cast::array($summary['runtime_ms'] ?? [])['p95'] ?? null,
             ],
         ];
     }

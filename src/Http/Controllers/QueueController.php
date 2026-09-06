@@ -10,6 +10,7 @@ use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Drivers\Capability;
 use Iocod\Yardmaster\Events\ActionPerformed;
 use Iocod\Yardmaster\Repositories\MetricsRepository;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Live queue state and the controls that act on it.
@@ -91,7 +92,7 @@ class QueueController extends Controller
         [$connection, $queue] = $this->target($request);
 
         return $this->gated(fn () => [
-            'deleted' => $adapters->for($connection)->forget($queue, (string) $request->input('id')),
+            'deleted' => $adapters->for($connection)->forget($queue, Cast::string($request->input('id'))),
         ]);
     }
 
@@ -100,7 +101,7 @@ class QueueController extends Controller
         [$connection, $queue] = $this->target($request);
 
         return $this->gated(fn () => [
-            'promoted' => $adapters->for($connection)->promote($queue, (string) $request->input('id')),
+            'promoted' => $adapters->for($connection)->promote($queue, Cast::string($request->input('id'))),
         ]);
     }
 
@@ -113,7 +114,7 @@ class QueueController extends Controller
     public function pause(Request $request, QueueFactory $queue): JsonResponse
     {
         [$connection, $name] = $this->target($request);
-        $ttl = (int) $request->input('ttl', 0);
+        $ttl = Cast::int($request->input('ttl', 0));
 
         return $this->gated(function () use ($queue, $connection, $name, $ttl) {
             if (! $queue instanceof QueueManager) {
@@ -176,8 +177,8 @@ class QueueController extends Controller
         // queue names are free-form strings on most drivers, and URL-encoding
         // them into a path is a reliable source of subtle routing bugs.
         return [
-            (string) ($request->input('connection') ?? $request->query('connection', '')),
-            (string) ($request->input('queue') ?? $request->query('queue', 'default')),
+            Cast::string($request->input('connection') ?? $request->query('connection', '')),
+            Cast::string($request->input('queue') ?? $request->query('queue', 'default')),
         ];
     }
 }

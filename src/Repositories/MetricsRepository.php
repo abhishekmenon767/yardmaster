@@ -6,6 +6,7 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
 use Iocod\Yardmaster\Enums\Period;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Support\Histogram;
 
 /**
@@ -295,7 +296,7 @@ class MetricsRepository
      */
     protected function rate(array $row): float
     {
-        $rate = (float) ($row['sample_rate'] ?? 1.0);
+        $rate = Cast::float($row['sample_rate'] ?? 1.0);
 
         return $rate > 0.0 ? $rate : 1.0;
     }

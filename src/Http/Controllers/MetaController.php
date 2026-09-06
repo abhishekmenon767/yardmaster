@@ -7,6 +7,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Drivers\Capability;
+use Iocod\Yardmaster\Support\Cast;
+use Laravel\Horizon\Horizon;
 
 /**
  * What the dashboard needs before it can render anything: which connections
@@ -49,6 +51,12 @@ class MetaController extends Controller
 
         return $this->json([
             'connections' => $connections,
+            // Horizon is excellent at what it does. Where it is installed,
+            // Yardmaster points at it for the Redis connections it already
+            // owns rather than presenting a second, competing view of them.
+            'horizon' => class_exists(Horizon::class)
+                ? ['installed' => true, 'path' => '/'.trim(Cast::string(config('horizon.path'), 'horizon'), '/')]
+                : ['installed' => false, 'path' => null],
             'capabilities' => array_map(static fn (Capability $c) => [
                 'value' => $c->value,
                 'label' => $c->label(),

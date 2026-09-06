@@ -179,7 +179,7 @@ final class Histogram
 
         $histogram = [];
         foreach ($decoded as $bucket => $count) {
-            $histogram[(int) $bucket] = (int) $count;
+            $histogram[Cast::int($bucket)] = Cast::int($count);
         }
 
         return $histogram;

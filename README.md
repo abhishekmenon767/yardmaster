@@ -6,8 +6,9 @@ Horizon is excellent and requires Redis. Pulse works everywhere and is read-only
 Yardmaster is aimed at the gap between them: record every job on every
 connection, and expose exactly the operations each driver can actually perform.
 
-> **Status: phase 5 of 6 — an operations console.** Everything below works end
-> to end. Documentation, the CI matrix and the 1.0 release are what remain.
+[![tests](https://img.shields.io/badge/tests-168%20passing-brightgreen)](.github/workflows/tests.yml)
+[![phpstan](https://img.shields.io/badge/phpstan-level%209-brightgreen)](phpstan.neon.dist)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 
 ## What works today
 
@@ -72,6 +73,16 @@ Applications can register their own:
 ```php
 app(AdapterManager::class)->extend('kafka', fn ($connection, $config) => new KafkaAdapter(...));
 ```
+
+## Working alongside Horizon
+
+Yardmaster does not ask you to replace Horizon. Where Horizon is installed, the
+dashboard links straight to it — it owns the live view of the Redis queues it
+already supervises, and duplicating that would be worse, not better. Yardmaster
+covers what Horizon cannot see: your other connections, durable history,
+grouped failures, and an audit trail.
+
+Running both is the expected configuration, not a compromise.
 
 ## The dashboard
 
@@ -356,20 +367,49 @@ run against every adapter. Adding a driver means adding a class and a capability
 map, then running that file against it. If that is ever not true, the
 abstraction has leaked.
 
+## Upgrading
+
+Yardmaster ships schema changes as migrations. After any upgrade:
+
+```bash
+php artisan vendor:publish --tag=yardmaster-migrations --force
+php artisan migrate
+```
+
+If you forget, the dashboard tells you rather than going quiet: a missing table
+answers `Yardmaster has not been migrated yet`, and a table that exists but is
+behind the code answers `Yardmaster's schema is out of date`. Both name the
+tables. This matters because recording is deliberately failure-tolerant — a
+schema that has drifted means jobs keep succeeding while telemetry silently
+stops, and that is a bad way to find out.
+
 ## Roadmap
 
-| Phase | | Status |
-| --- | --- | --- |
-| 1 | Telemetry spine | **done** |
-| 2 | Driver adapters and the capability gate | **done** (database, redis, sqs) |
-| 3 | JSON API and dashboard | **done** |
-| 4 | Redis stream ingest, sampling, Octane, serverless | **done** |
-| 5 | Failure clustering, alerting, worker fleet | **done** |
-| 6 | Docs, CI matrix, PHPStan level 9, 1.0 | next |
+**1.0 is complete.** What is deliberately not in it:
 
-Static analysis currently passes at **level 8**. Level 9 needs typed config
-accessors throughout and is tracked for phase 6.
+- **A Beanstalkd adapter.** It resolves to the null adapter — full recorded
+  history, live controls correctly disabled. Shipping an adapter that had never
+  run against a real server would be exactly the unverified claim this package
+  exists to avoid.
+- **Process supervision and autoscaling.** Supervisor and systemd already do
+  that job well. Yardmaster observes workers instead.
+- **Multi-application aggregation.** One application per dashboard for now.
+
+Static analysis passes at **level 9**. Config values, database columns and
+decoded payloads genuinely are of unknown type at the boundary; `Support\Cast`
+narrows them with an explicit fallback rather than a bare cast that hides what
+happens when one is null.
+
+## Contributing
+
+Pull requests welcome. `composer check` runs Pint, PHPStan and the suite — the
+same three gates CI runs. A fourth CI job rebuilds `dist/` and fails if the
+committed bundle has drifted from its source.
+
+Adding a queue driver means adding an adapter class and a capability map, then
+running `tests/Contracts/AdapterContract.php` against it. If that is ever not
+enough, the abstraction has leaked and the adapter is the wrong place to fix it.
 
 ## Licence
 
-MIT.
+MIT. See [LICENSE.md](LICENSE.md).

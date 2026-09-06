@@ -5,6 +5,7 @@ namespace Iocod\Yardmaster\Repositories;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Reads the per-attempt run log.
@@ -105,7 +106,7 @@ class RunRepository
             ->orderBy($column)
             ->limit($limit)
             ->pluck($column)
-            ->map(static fn ($value) => (string) $value)
+            ->map(static fn ($value) => Cast::string($value))
             ->all();
     }
 
@@ -127,19 +128,19 @@ class RunRepository
         }
 
         if (($from = $filters['from'] ?? null) !== null) {
-            $query->where('started_at', '>=', (float) $from);
+            $query->where('started_at', '>=', Cast::float($from));
         }
 
         if (($to = $filters['to'] ?? null) !== null) {
-            $query->where('started_at', '<=', (float) $to);
+            $query->where('started_at', '<=', Cast::float($to));
         }
 
         if (($slower = $filters['slower_than'] ?? null) !== null) {
-            $query->where('runtime_ms', '>=', (float) $slower);
+            $query->where('runtime_ms', '>=', Cast::float($slower));
         }
 
         if (($search = $filters['search'] ?? null) !== null && $search !== '') {
-            $term = '%'.$search.'%';
+            $term = '%'.Cast::string($search).'%';
 
             $query->where(function (Builder $inner) use ($term) {
                 $inner->where('job_class', 'like', $term)
@@ -153,7 +154,7 @@ class RunRepository
             // Tags are a small JSON array; a LIKE against the encoded form is
             // portable across MySQL, Postgres and SQLite, which JSON operators
             // are not.
-            $query->where('tags', 'like', '%'.json_encode((string) $tag).'%');
+            $query->where('tags', 'like', '%'.json_encode(Cast::string($tag)).'%');
         }
 
         return $query;
@@ -172,19 +173,19 @@ class RunRepository
     protected function present(array $row, bool $withPayload = false): array
     {
         $run = [
-            'uuid' => (string) ($row['uuid'] ?? ''),
+            'uuid' => Cast::string($row['uuid'] ?? ''),
             'job_uuid' => $this->stringOrNull($row['job_uuid'] ?? null),
-            'job_class' => (string) ($row['job_class'] ?? ''),
-            'connection' => (string) ($row['connection'] ?? ''),
-            'queue' => (string) ($row['queue'] ?? ''),
-            'attempt' => (int) ($row['attempt'] ?? 1),
-            'status' => (string) ($row['status'] ?? ''),
+            'job_class' => Cast::string($row['job_class'] ?? ''),
+            'connection' => Cast::string($row['connection'] ?? ''),
+            'queue' => Cast::string($row['queue'] ?? ''),
+            'attempt' => Cast::int($row['attempt'] ?? 1),
+            'status' => Cast::string($row['status'] ?? ''),
             'queued_at' => $this->floatOrNull($row['queued_at'] ?? null),
-            'started_at' => (float) ($row['started_at'] ?? 0),
+            'started_at' => Cast::float($row['started_at'] ?? 0),
             'finished_at' => $this->floatOrNull($row['finished_at'] ?? null),
             'wait_ms' => $this->floatOrNull($row['wait_ms'] ?? null),
             'runtime_ms' => $this->floatOrNull($row['runtime_ms'] ?? null),
-            'peak_memory_kb' => isset($row['peak_memory_kb']) ? (int) $row['peak_memory_kb'] : null,
+            'peak_memory_kb' => isset($row['peak_memory_kb']) ? Cast::int($row['peak_memory_kb']) : null,
             'batch_id' => $this->stringOrNull($row['batch_id'] ?? null),
             'parent_uuid' => $this->stringOrNull($row['parent_uuid'] ?? null),
             'tags' => $this->decode($row['tags'] ?? null),
@@ -201,7 +202,7 @@ class RunRepository
 
     protected function stringOrNull(mixed $value): ?string
     {
-        return $value === null ? null : (string) $value;
+        return $value === null ? null : Cast::string($value);
     }
 
     protected function floatOrNull(mixed $value): ?float

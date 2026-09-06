@@ -131,6 +131,11 @@ onUnmounted(() => {
         <span class="dot"></span>{{ live ? 'Live' : 'Polling' }}
       </div>
       <span class="spacer"></span>
+      <a
+        v-if="meta?.horizon?.installed"
+        class="btn" :href="meta.horizon.path"
+        title="Horizon owns the live view of your Redis queues; Yardmaster covers the rest"
+      >Horizon ↗</a>
       <select v-model.number="range" @change="refresh">
         <option v-for="r in RANGES" :key="r.id" :value="r.id">{{ r.label }}</option>
       </select>

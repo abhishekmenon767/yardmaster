@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Iocod\Yardmaster\Actions\JobRetrier;
 use Iocod\Yardmaster\Repositories\IssueRepository;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Failures as problems rather than rows.
@@ -44,17 +45,17 @@ class IssueController extends Controller
      */
     public function retry(string $fingerprint, Request $request, IssueRepository $issues, JobRetrier $retrier): JsonResponse
     {
-        $limit = max(1, min(5000, (int) $request->input('limit', 1000)));
+        $limit = max(1, min(5000, Cast::int($request->input('limit', 1000))));
 
         return $this->json($retrier->retryMany($issues->jobUuids($fingerprint, $limit)));
     }
 
     public function status(string $fingerprint, Request $request, IssueRepository $issues): JsonResponse
     {
-        $status = (string) $request->input('status', 'open');
+        $status = Cast::string($request->input('status', 'open'));
 
         $actor = $request->user();
-        $name = $actor === null ? null : (string) (data_get($actor, 'name') ?? data_get($actor, 'email') ?? '');
+        $name = $actor === null ? null : Cast::string(data_get($actor, 'name') ?? data_get($actor, 'email') ?? '');
 
         if (! $issues->setStatus($fingerprint, $status, $name)) {
             return $this->json([

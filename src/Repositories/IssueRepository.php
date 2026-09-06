@@ -6,6 +6,7 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Query\Builder;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Reads and updates grouped failures.
@@ -37,7 +38,7 @@ class IssueRepository
         }
 
         if (($search = $filters['search'] ?? null) !== null && $search !== '') {
-            $term = '%'.$search.'%';
+            $term = '%'.Cast::string($search).'%';
             $query->where(function (Builder $inner) use ($term) {
                 $inner->where('exception_class', 'like', $term)
                     ->orWhere('normalised_message', 'like', $term)
@@ -107,7 +108,7 @@ class IssueRepository
             ->orderByDesc('started_at')
             ->limit(max(1, $limit))
             ->pluck('job_uuid')
-            ->map(static fn ($uuid) => (string) $uuid)
+            ->map(static fn ($uuid) => Cast::string($uuid))
             ->unique()
             ->values()
             ->all();
@@ -120,17 +121,17 @@ class IssueRepository
     protected function present(array $row): array
     {
         return [
-            'fingerprint' => (string) $row['fingerprint'],
-            'exception_class' => (string) $row['exception_class'],
-            'message' => (string) $row['normalised_message'],
-            'sample_message' => $row['sample_message'] === null ? null : (string) $row['sample_message'],
-            'frame' => $row['frame'] === null ? null : (string) $row['frame'],
-            'job_class' => (string) $row['job_class'],
-            'occurrences' => (int) $row['occurrences'],
-            'first_seen' => (float) $row['first_seen'],
-            'last_seen' => (float) $row['last_seen'],
-            'status' => (string) $row['status'],
-            'sample_run_uuid' => $row['sample_run_uuid'] === null ? null : (string) $row['sample_run_uuid'],
+            'fingerprint' => Cast::string($row['fingerprint']),
+            'exception_class' => Cast::string($row['exception_class']),
+            'message' => Cast::string($row['normalised_message']),
+            'sample_message' => $row['sample_message'] === null ? null : Cast::string($row['sample_message']),
+            'frame' => $row['frame'] === null ? null : Cast::string($row['frame']),
+            'job_class' => Cast::string($row['job_class']),
+            'occurrences' => Cast::int($row['occurrences']),
+            'first_seen' => Cast::float($row['first_seen']),
+            'last_seen' => Cast::float($row['last_seen']),
+            'status' => Cast::string($row['status']),
+            'sample_run_uuid' => $row['sample_run_uuid'] === null ? null : Cast::string($row['sample_run_uuid']),
         ];
     }
 

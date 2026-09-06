@@ -2,6 +2,8 @@
 
 namespace Iocod\Yardmaster\Values;
 
+use Iocod\Yardmaster\Support\Cast;
+
 /**
  * A job sitting on a queue, seen without consuming it.
  *
@@ -40,13 +42,14 @@ final class PendingJob
         return new self(
             id: $id,
             uuid: isset($payload['uuid']) && is_string($payload['uuid']) ? $payload['uuid'] : null,
-            jobClass: is_string($payload['data']['commandName'] ?? null)
-                ? $payload['data']['commandName']
-                : (is_string($payload['displayName'] ?? null) ? $payload['displayName'] : 'unknown'),
+            jobClass: Cast::string(
+                Cast::array($payload['data'] ?? [])['commandName'] ?? $payload['displayName'] ?? null,
+                'unknown',
+            ),
             queue: $queue,
-            attempts: (int) ($payload['attempts'] ?? 0),
+            attempts: Cast::int($payload['attempts'] ?? 0),
             availableAt: $availableAt,
-            createdAt: $createdAt ?? (isset($payload['createdAt']) ? (int) $payload['createdAt'] : null),
+            createdAt: $createdAt ?? (isset($payload['createdAt']) ? Cast::int($payload['createdAt']) : null),
             delayed: $delayed,
             payload: $payload,
         );

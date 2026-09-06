@@ -16,6 +16,7 @@ use Iocod\Yardmaster\Contracts\Ingest;
 use Iocod\Yardmaster\Drivers\AdapterManager;
 use Iocod\Yardmaster\Events\ActionPerformed;
 use Iocod\Yardmaster\Http\Middleware\Authorize;
+use Iocod\Yardmaster\Support\Cast;
 use Iocod\Yardmaster\Support\PayloadInjector;
 use Iocod\Yardmaster\Support\Redactor;
 use Spatie\LaravelPackageTools\Package;
@@ -168,7 +169,9 @@ class YardmasterServiceProvider extends PackageServiceProvider
     {
         $events = $this->app->make(Dispatcher::class);
 
-        foreach ((array) $this->config()->get('yardmaster.recorders', []) as $class => $config) {
+        foreach (Cast::array($this->config()->get('yardmaster.recorders', [])) as $class => $config) {
+            $config = Cast::array($config);
+
             if (! is_string($class) || ($config['enabled'] ?? true) === false) {
                 continue;
             }
@@ -188,7 +191,7 @@ class YardmasterServiceProvider extends PackageServiceProvider
     {
         $injector = new PayloadInjector(
             $this->app->make(Yardmaster::class),
-            (array) $this->config()->get('yardmaster.tags', []),
+            Cast::array($this->config()->get('yardmaster.tags', [])),
         );
 
         Queue::createPayloadUsing($injector);

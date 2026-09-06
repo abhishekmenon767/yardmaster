@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\SqsQueue;
+use Iocod\Yardmaster\Support\Cast;
 
 /**
  * Resolves the right adapter for a queue connection.
@@ -107,7 +108,7 @@ class AdapterManager
                 cache: $this->cache(),
                 events: $this->events(),
                 keyPrefix: $this->redisPrefix(),
-                maxScan: (int) $this->config->get('yardmaster.drivers.redis.max_scan', 10000),
+                maxScan: Cast::int($this->config->get('yardmaster.drivers.redis.max_scan', 10000)),
             ),
             'sqs' => $this->sqsAdapter($connection, $config),
             default => new NullAdapter($connection, $driver, $config),
