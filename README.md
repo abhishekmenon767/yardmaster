@@ -306,6 +306,57 @@ Schedule::command('yard:trim')->everyFifteenMinutes();
 That is the whole installation for most applications: the default `database`
 ingest needs no extra process at all.
 
+## Updating
+
+```bash
+composer update abhishekmenon767/yardmaster
+```
+
+No migration or publish step is needed unless a release says otherwise. A
+release that changes the schema will say so, and the dashboard refuses to serve
+a stale schema rather than filling with quiet gaps — every API route answers
+503 naming the tables that are behind.
+
+## Uninstalling
+
+Roll back before removing the package, not after:
+
+```bash
+php artisan migrate:rollback --step=5 --pretend   # check first
+php artisan migrate:rollback --step=5
+composer remove abhishekmenon767/yardmaster
+rm -f config/yardmaster.php
+rm -f database/migrations/*_create_yard_*_table.php
+```
+
+`--step` counts migrations, not tables, so `--step=5` is the five Yardmaster
+tables only if nothing else has been migrated since it was installed. That is
+what the `--pretend` run is for. If your own migrations came later, target the
+files instead:
+
+```bash
+php artisan migrate:rollback --path=database/migrations/2026_01_01_000000_create_yard_runs_table.php
+```
+
+The order matters. The published migrations resolve their target with
+`config('yardmaster.storage.connection')`, and that key has no fallback. Remove
+the package first and it resolves to `null`, so an installation that pointed
+telemetry at its own connection would drop from the *default* database instead
+— finding nothing, reporting success, and leaving the real tables behind. If
+that has already happened, drop them by hand:
+
+```sql
+DROP TABLE IF EXISTS yard_runs, yard_buckets, yard_actions, yard_issues, yard_workers;
+```
+
+Two things the commands above do not reach: the scheduled `yard:trim` entry,
+which will fail every fifteen minutes once the command is gone, and any
+`viewYardmaster` / `manageYardmaster` gate definitions, which are harmless but
+dead.
+
+To switch it off without uninstalling, set `YARDMASTER_ENABLED=false`. That
+stops every listener and leaves the recorded history intact.
+
 ## Design notes
 
 **Attempts, not jobs, are the unit of storage.** A job released three times and
