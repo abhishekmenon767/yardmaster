@@ -4,6 +4,29 @@ All notable changes to `abhishekmenon767/yardmaster` are documented here. The fo
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.1
+
+### Fixed
+
+- **The queue list no longer fatals on Laravel below v12.40.** `QueueManager`
+  gained `pause()`, `resume()` and `isPaused()` in v12.40.0, but the package
+  requires `^12.0` and guarded the calls with `instanceof QueueManager` — true
+  on every 12.x, because only the methods are new. The call fell through
+  `__call` to the connection and died with "Call to undefined method
+  `Illuminate\Queue\DatabaseQueue::isPaused()`". Since `index()` calls
+  `isPaused()` outside any rescue boundary, `GET /api/v1/queues` returned a 500
+  on Laravel 12.0 through 12.39. The methods are now detected rather than the
+  class, and pausing refuses with a 422 naming the required version instead of
+  reporting a queue as paused when the command never reached the framework.
+- The workbench no longer pins its database to one developer's home directory,
+  which left `testbench serve` reporting an unmigrated schema on any other
+  checkout.
+
+### Changed
+
+- `package-lock.json` is committed, so `npm ci` can build `dist/` reproducibly.
+- Dev dependencies allow pest 4, which is required to test against Laravel 13.
+
 ## 1.0.0
 
 First stable release.
