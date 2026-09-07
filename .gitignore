@@ -1,8 +1,11 @@
 /vendor
 /node_modules
 /build
+# composer.lock is not committed: this is a library, so the application's own
+# lock file decides versions. package-lock.json *is* committed — CI builds
+# dist/ with `npm ci`, which requires it, and pinning the toolchain is what
+# makes the committed bundle reproducible.
 composer.lock
-package-lock.json
 .phpunit.result.cache
 .phpunit.cache
 .DS_Store
