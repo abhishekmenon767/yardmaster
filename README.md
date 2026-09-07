@@ -286,6 +286,11 @@ php artisan vendor:publish --tag=yardmaster-migrations
 php artisan migrate
 ```
 
+Pausing and resuming a queue is the one control the framework itself owns, and
+it arrived in **Laravel v12.40.0**. On earlier 12.x releases everything else
+works and the pause control refuses with a 422 that says why, rather than
+reporting a queue as running when the command never took effect.
+
 Optionally publish the config:
 
 ```bash

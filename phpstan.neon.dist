@@ -6,3 +6,12 @@ parameters:
     paths:
         - src
     treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # QueueManager::isPaused() arrived in Laravel v12.40.0 and the package
+        # supports ^12.0. PHPStan analyses against whichever version happens to
+        # be installed, where the method is always present, so it reads the
+        # guard as redundant. On the older releases it is the only thing
+        # standing between the queue list and a fatal error.
+        -
+            identifier: function.alreadyNarrowedType
+            path: src/Http/Controllers/QueueController.php

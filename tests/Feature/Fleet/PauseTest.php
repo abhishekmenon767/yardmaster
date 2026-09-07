@@ -1,6 +1,7 @@
 <?php
 
 use Abhishek\Yardmaster\Tests\Fixtures\SucceedingJob;
+use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 
@@ -79,4 +80,45 @@ it('requires the manage gate to pause', function () {
     $this->postJson('yardmaster/api/v1/queues/pause', [
         'connection' => 'database', 'queue' => 'reports',
     ])->assertForbidden();
+});
+
+/**
+ * Pausing arrived in Laravel v12.40.0, and the package supports ^12.0.
+ *
+ * On older releases QueueManager exists but the methods do not, so an
+ * instanceof check passes and __call forwards to the connection — which is
+ * how `GET /queues` came to die with "undefined method
+ * DatabaseQueue::isPaused()" rather than simply omitting the control.
+ *
+ * A factory without the methods stands in for that framework here.
+ */
+it('does not fatal listing queues when the framework cannot pause', function () {
+    $this->app->bind(QueueFactory::class, fn () => new class implements QueueFactory
+    {
+        public function connection($name = null)
+        {
+            return Queue::connection($name);
+        }
+    });
+
+    Queue::connection('database')->pushOn('reports', new SucceedingJob);
+
+    $response = $this->getJson('yardmaster/api/v1/queues')->assertOk();
+
+    expect($response->json('data'))->not->toBeEmpty()
+        ->and(collect($response->json('data'))->pluck('paused')->unique()->all())->toBe([false]);
+});
+
+it('refuses to pause rather than reporting success it cannot deliver', function () {
+    $this->app->bind(QueueFactory::class, fn () => new class implements QueueFactory
+    {
+        public function connection($name = null)
+        {
+            return Queue::connection($name);
+        }
+    });
+
+    $this->postJson('yardmaster/api/v1/queues/pause', [
+        'connection' => 'database', 'queue' => 'reports',
+    ])->assertStatus(422)->assertJsonPath('capability', 'pause_queue');
 });

@@ -116,11 +116,12 @@ class QueueController extends Controller
         [$connection, $name] = $this->target($request);
         $ttl = Cast::int($request->input('ttl', 0));
 
-        return $this->gated(function () use ($queue, $connection, $name, $ttl) {
-            if (! $queue instanceof QueueManager) {
-                return ['paused' => false];
-            }
+        if (! $this->supportsPausing($queue)) {
+            return $this->pausingUnavailable();
+        }
 
+        return $this->gated(function () use ($queue, $connection, $name, $ttl) {
+            /** @var QueueManager $queue */
             $ttl > 0
                 ? $queue->pauseFor($connection, $name, $ttl)
                 : $queue->pause($connection, $name);
@@ -142,11 +143,12 @@ class QueueController extends Controller
     {
         [$connection, $name] = $this->target($request);
 
-        return $this->gated(function () use ($queue, $connection, $name) {
-            if (! $queue instanceof QueueManager) {
-                return ['paused' => false];
-            }
+        if (! $this->supportsPausing($queue)) {
+            return $this->pausingUnavailable();
+        }
 
+        return $this->gated(function () use ($queue, $connection, $name) {
+            /** @var QueueManager $queue */
             $queue->resume($connection, $name);
 
             event(new ActionPerformed(
@@ -165,7 +167,34 @@ class QueueController extends Controller
     {
         $manager = app(QueueFactory::class);
 
-        return $manager instanceof QueueManager && $manager->isPaused($connection, $queue);
+        return $this->supportsPausing($manager) && $manager->isPaused($connection, $queue);
+    }
+
+    /**
+     * Pausing arrived in Laravel v12.40.0.
+     *
+     * On earlier releases QueueManager still exists, so an instanceof check
+     * passes and the call falls through __call to the connection, which dies
+     * with "undefined method DatabaseQueue::isPaused()". The class is not the
+     * thing to test for; the methods are.
+     *
+     * @phpstan-assert-if-true QueueManager $queue
+     */
+    protected function supportsPausing(mixed $queue): bool
+    {
+        return $queue instanceof QueueManager && method_exists($queue, 'isPaused');
+    }
+
+    /**
+     * Refuse loudly rather than reporting a queue as running when the control
+     * never took effect.
+     */
+    protected function pausingUnavailable(): JsonResponse
+    {
+        return $this->json([
+            'message' => 'Pausing queues requires Laravel v12.40.0 or newer.',
+            'capability' => 'pause_queue',
+        ], 422);
     }
 
     /**
