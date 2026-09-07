@@ -281,7 +281,7 @@ sample of a distribution has the same shape as the whole.
 ## Install
 
 ```bash
-composer require abhishek/yardmaster
+composer require abhishekmenon767/yardmaster
 php artisan vendor:publish --tag=yardmaster-migrations
 php artisan migrate
 ```
