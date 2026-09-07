@@ -5,7 +5,12 @@ env:
   - APP_ENV=local
   - APP_KEY=base64:0000000000000000000000000000000000000000000=
   - DB_CONNECTION=sqlite
-  - DB_DATABASE=workbench/database/database.sqlite
+  # DB_DATABASE is deliberately absent. Hard-coding a path here pins the
+  # workbench to one machine, and a relative one resolves against the wrong
+  # base under `testbench serve`, which then reports the schema as unmigrated.
+  # Testbench's own default is correct on every checkout; a developer who wants
+  # a persistent demo database sets DB_DATABASE in workbench/.env, which is
+  # per-developer and not committed.
   - QUEUE_CONNECTION=database
   - CACHE_STORE=file
 
